@@ -6,6 +6,10 @@ An India map quiz game for UPSC Prelims map questions. It's a plain static site 
 
 Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
 
+## Sound and animation
+
+After you tap, a dashed flight path draws from your pin to the real place with a running km counter, then the answer marker pops in and your points count up. Sound effects are generated in the browser (no audio files); use the 🔊 button in the header to mute them.
+
 ## How a practice round works
 
 The map fills the screen. A question card at the top shows the place and a countdown (30 s, 15 s or off). Drop a pin (or pick a state), adjust it if you like, then press **Confirm** (or Enter). The result sheet shows the line from your pin to the answer, the distance, a points bar and the UPSC fact. After the last round a summary card shows your score, stars and a review of every place.
@@ -39,6 +43,7 @@ Then visit http://localhost:8000.
 ## Files
 
 - `places.js` — the question bank. Add a place as `[name, lat, lon, state, fact]`.
+- `map-extra.js` — neighbouring countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), simplified.
 - `map-data.js` — simplified state outlines from the [DataMeet India community maps](https://github.com/datameet/maps) (CC BY 4.0), following the Survey of India outline. Jammu & Kashmir and Ladakh are drawn as one shape (the source predates 2019).
 - `index.html` — the game: map drawing, pan/zoom, scoring and all three modes.
 

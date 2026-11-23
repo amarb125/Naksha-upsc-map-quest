@@ -28,6 +28,10 @@
   --bad: #c2462e;
   --target: #f2c66d;
   --guide: #b0574a;
+  --nb-land: #e2e2d8;
+  --nb-border: #b9bcb0;
+  --river: #5b9bb5;
+  --relief: #8a6d4b;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -37,14 +41,14 @@
     --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
     --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
     --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
-    --target: #8a6a26; --guide: #d98a7c; color-scheme: dark;
+    --target: #8a6a26; --guide: #d98a7c; --nb-land: #1f2a2b; --nb-border: #3a4a4a; --river: #4f93ad; --relief: #c7a57c; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
   --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
   --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
-  --target: #8a6a26; --guide: #d98a7c; color-scheme: dark;
+  --target: #8a6a26; --guide: #d98a7c; --nb-land: #1f2a2b; --nb-border: #3a4a4a; --river: #4f93ad; --relief: #c7a57c; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -65,6 +69,7 @@ button { cursor: pointer; }
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--line); background: var(--panel);
 }
+.soundbtn { order: 3; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-size: 18px; line-height: 1; }
 .brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; background: none; border: 0; padding: 0; text-align: left; }
 .brand b { font: 800 22px/1 var(--f-display); letter-spacing: -0.02em; }
 .brand span { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -82,6 +87,26 @@ button { cursor: pointer; }
 .state.target { fill: var(--target); }
 .state.wrong { fill: color-mix(in srgb, var(--bad) 35%, var(--land)); }
 .state.hint { stroke: var(--accent); stroke-width: 2; }
+.nb { fill: var(--nb-land); stroke: var(--nb-border); stroke-width: 0.6; vector-effect: non-scaling-stroke; pointer-events: none; }
+.nb-label { fill: var(--muted); font-family: var(--f-body); font-weight: 600; letter-spacing: 0.25em; opacity: .7; pointer-events: none; }
+#water, #relief, #neighbours, #seaLabels { pointer-events: none; }
+.river { fill: none; stroke: var(--river); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; }
+.lake { fill: color-mix(in srgb, var(--river) 55%, var(--sea)); stroke: var(--river); stroke-width: .5; vector-effect: non-scaling-stroke; }
+#relief.far { visibility: hidden; }
+.relief-label { fill: var(--relief); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.22em; opacity: .75; }
+.river-label { fill: var(--river); font-family: var(--f-body); font-style: italic; font-weight: 500; opacity: .95; }
+.m-arc { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 7 5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.m-comet { fill: var(--pin); }
+.m-glow { fill: var(--pin); opacity: .35; }
+.m-km { fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 4; stroke-linejoin: round; font-family: var(--f-mono); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) {
+  .pop { animation: pop .5s cubic-bezier(.3,1.6,.5,1) both; transform-box: fill-box; transform-origin: center; }
+  @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+  .shock { animation: shock .9s ease-out forwards; transform-box: fill-box; transform-origin: center; }
+  @keyframes shock { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(4); } }
+  .feedback.reveal { animation: rise .35s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+}
 .grid line { stroke: var(--sea-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
 .guide line { stroke: var(--guide); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
 .guide text, .sea-label { fill: var(--muted); font-family: var(--f-mono); }
@@ -237,6 +262,12 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 .rhead { text-align: center; }
 .stars { font-size: 30px; letter-spacing: 6px; color: var(--pin); line-height: 1.2; }
 .rhead .bigscore { margin-top: 2px; }
+@media (max-width: 480px) {
+  .bar { flex-wrap: nowrap; gap: 10px; }
+  .brand span { display: none; }
+  .soundbtn { width: 34px; height: 34px; font-size: 16px; }
+  .stats { gap: 10px; }
+}
 @media (max-width: 860px) {
   body.playing { overflow: hidden; }
   .app { flex: none; }
@@ -265,6 +296,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 <body>
 <header class="bar">
   <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><b>Naksha</b><span>UPSC Map Quest</span></button>
+  <button type="button" class="soundbtn" id="soundBtn" aria-pressed="true" aria-label="Sound on">🔊</button>
   <div class="stats" id="stats" hidden>
     <div class="stat"><small>Round</small><b id="sRound">1/10</b></div>
     <div class="stat"><small>Score</small><b id="sScore">0</b></div>
@@ -277,8 +309,11 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     <svg id="map" viewBox="0 0 550 628" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outline map of India with state boundaries">
       <rect x="-2000" y="-2000" width="5000" height="5000" fill="var(--sea)"></rect>
       <g class="grid" id="grid"></g>
+      <g id="neighbours"></g>
       <g id="seaLabels"></g>
       <g id="states"></g>
+      <g id="water"></g>
+      <g id="relief"></g>
       <g class="guide" id="guide"></g>
       <g id="dots"></g>
       <g id="marks"></g>
@@ -290,7 +325,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       <button type="button" id="zreset" aria-label="Show all of India">⤢</button>
     </div>
     <div class="coords" id="coords">23.44°N · 82.50°E</div>
-    <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Tropic &amp; 82.5°E</label>
+    <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Labels &amp; guide lines</label>
 
     <!-- PLAY: overlays on the full-screen map -->
     <div class="play" id="vPlay" hidden>
@@ -301,7 +336,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <div class="timer" id="timerWrap" hidden><i id="timerBar"></i></div>
         <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
       </div>
-      <div class="sheet">
+      <div class="sheet" id="sheet">
         <div class="options" id="options" hidden></div>
         <div class="actrow" id="hintRow">
           <button type="button" class="btn ghost small" id="hintBtn">State (½ pts)</button>
@@ -426,6 +461,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="map-data.js"></script>
+<script src="map-extra.js"></script>
 <script src="places.js"></script>
 <script>
 (() => {
@@ -499,11 +535,37 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const t = svgEl("text", { x: 6, y: y - 4, "data-fs": 9 }, gGuide); t.textContent = "TROPIC OF CANCER 23°26′N";
     const [x] = proj(0, 82.5); svgEl("line", { x1: x, y1: -2000, x2: x, y2: H + 2000 }, gGuide);
     const t2 = svgEl("text", { x: x + 4, y: H - 8, "data-fs": 9 }, gGuide); t2.textContent = "82°30′E IST"; }
+  // ---- map detail: neighbours, rivers, lakes, relief and country labels ----
+  {
+    const X = window.MAP_EXTRA || { neighbours: {}, rivers: [], lakes: "" };
+    const gN = $("neighbours");
+    for (const d of Object.values(X.neighbours)) svgEl("path", { d, class: "nb" }, gN);
+    const gW = $("water");
+    if (X.lakes) svgEl("path", { d: X.lakes, class: "lake" }, gW);
+    for (const [name, rank, d] of X.rivers) {
+      const w = rank <= 3 ? 1.5 : rank <= 6 ? 1.1 : 0.8;
+      const pth = svgEl("path", { d, class: "river", "stroke-width": w }, gW);
+      if (name) { const t = svgEl("title", {}, pth); t.textContent = name; }
+    }
+    const gR = $("relief");
+    const txt = (cls, text, lat, lon, fs, rot = 0, parent = gR) => {
+      const [x, y] = proj(lat, lon);
+      const t = svgEl("text", { x, y, class: cls, "data-fs": fs, "text-anchor": "middle", transform: rot ? `rotate(${rot} ${x} ${y})` : "" }, parent);
+      t.textContent = text;
+    };
+    for (const [n, lat, lon] of [["PAKISTAN", 28.6, 68.4], ["CHINA", 33.2, 86.5], ["NEPAL", 28.25, 84.0], ["BHUTAN", 27.45, 90.45], ["BANGLADESH", 23.7, 90.1], ["MYANMAR", 21.5, 95.4], ["SRI LANKA", 7.9, 80.75]])
+      txt("nb-label", n, lat, lon, 9, 0, gN);
+    for (const [n, lat, lon, rot] of [["H I M A L A Y A", 30.1, 80.2, 24], ["KARAKORAM", 35.4, 76.6, 22], ["THAR DESERT", 27.2, 71.4, 0], ["ARAVALLI", 25.6, 74.3, -50],
+      ["VINDHYA", 24.2, 78.6, -7], ["SATPURA", 21.95, 77.4, -4], ["DECCAN PLATEAU", 17.9, 77.0, 0], ["WESTERN GHATS", 14.3, 74.7, 75], ["EASTERN GHATS", 17.4, 82.0, -53],
+      ["CHOTA NAGPUR", 23.25, 85.1, 0], ["MALWA", 23.0, 75.6, 0], ["GANGA PLAINS", 26.4, 82.4, -12], ["SHILLONG PLATEAU", 25.45, 91.6, 0]])
+      txt("relief-label", n, lat, lon, 9, rot);
+  }
   const gSea = $("seaLabels");
-  for (const [txt, lat, lon] of [["ARABIAN SEA", 15.5, 69.2], ["BAY OF BENGAL", 15.5, 85.6], ["INDIAN OCEAN", 7.2, 78.5]]) {
+  for (const [txt, lat, lon] of [["ARABIAN SEA", 15.5, 69.2], ["BAY OF BENGAL", 15.5, 85.6], ["INDIAN OCEAN", 6.4, 75.2]]) {
     const [x, y] = proj(lat, lon); const t = svgEl("text", { x, y, class: "sea-label", "data-fs": 10 }, gSea); t.textContent = txt;
   }
-  $("guideToggle").addEventListener("change", (e) => { gGuide.style.display = e.target.checked ? "" : "none"; });
+  $("guideToggle").addEventListener("change", (e) => { for (const id of ["guide", "relief", "seaLabels"]) $(id).style.display = e.target.checked ? "" : "none";
+    document.querySelectorAll(".nb-label").forEach((t) => t.style.display = e.target.checked ? "" : "none"); });
 
   // ---------- pan & zoom ----------
   let vb = { x: 0, y: 0, w: W, h: H };
@@ -518,6 +580,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     clampVb();
     svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
     const u = 1 / ppu(); // map units per screen pixel
+    $("relief").classList.toggle("far", ppu() < 0.9);
     svg.querySelectorAll("[data-r]").forEach((e) => e.setAttribute("r", e.dataset.r * u));
     svg.querySelectorAll("[data-fs]").forEach((e) => e.setAttribute("font-size", e.dataset.fs * u * 1.15));
     svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
@@ -652,7 +715,51 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { timeLimit = +b.dataset.t; store.set("timer", timeLimit); renderHome(); });
   $("startBtn").onclick = () => mode === "learn" ? openLearn(topicId) : startGame(topicById(topicId).items);
   $("homeBtn").onclick = goHome;
-  function goHome() { svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
+  function goHome() { if (game?.cur) game.cur.animating = false; svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
+
+  // ---------- sound (synthesised, no files) ----------
+  const sfx = (() => {
+    let ctx = null, on = store.get("sound", true);
+    const ensure = () => { if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { ctx = null; } } if (ctx?.state === "suspended") ctx.resume(); return ctx; };
+    addEventListener("pointerdown", () => { if (on) ensure(); }, { capture: true });
+    function tone(freq, start, dur, { type = "sine", vol = 0.15, to = null } = {}) {
+      const c = ensure(); if (!c || !on) return;
+      const t0 = c.currentTime + start, o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t0); if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+    }
+    function whoosh(dur) {
+      const c = ensure(); if (!c || !on) return;
+      const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t0 = c.currentTime;
+      src.buffer = buf; f.type = "bandpass"; f.Q.value = 3; f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(2400, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.09, t0 + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(f).connect(g).connect(c.destination); src.start(t0);
+    }
+    return {
+      get on() { return on; },
+      set on(v) { on = v; store.set("sound", v); if (v) ensure(); },
+      tap: () => tone(1200, 0, 0.06, { type: "triangle", vol: 0.12, to: 700 }),
+      pick: () => tone(660, 0, 0.07, { type: "triangle", vol: 0.1 }),
+      whoosh,
+      tick: () => tone(880, 0, 0.05, { type: "square", vol: 0.05 }),
+      land(f) {
+        if (f >= 0.95) [523, 659, 784, 1047].forEach((n, i) => tone(n, i * 0.08, 0.35, { type: "triangle", vol: 0.16 }));
+        else if (f >= 0.5) [523, 659, 784].forEach((n, i) => tone(n, i * 0.09, 0.3, { type: "triangle", vol: 0.14 }));
+        else if (f >= 0.2) [440, 554].forEach((n, i) => tone(n, i * 0.1, 0.28, { type: "triangle", vol: 0.12 }));
+        else { tone(196, 0, 0.45, { type: "sawtooth", vol: 0.06, to: 130 }); tone(98, 0, 0.45, { vol: 0.12, to: 70 }); }
+      },
+      fanfare(frac) {
+        const notes = frac >= 0.8 ? [523, 659, 784, 1047, 1319] : frac >= 0.5 ? [523, 659, 784, 1047] : frac >= 0.2 ? [440, 523, 659] : [392, 330, 262];
+        notes.forEach((n, i) => tone(n, i * 0.12, 0.45, { type: "triangle", vol: 0.14 }));
+      },
+    };
+  })();
+  function renderSoundBtn() { const b = $("soundBtn"); b.textContent = sfx.on ? "🔊" : "🔇"; b.setAttribute("aria-pressed", sfx.on); b.setAttribute("aria-label", sfx.on ? "Sound on" : "Sound off"); }
+  $("soundBtn").onclick = () => { sfx.on = !sfx.on; renderSoundBtn(); if (sfx.on) sfx.pick(); };
+  renderSoundBtn();
 
   // ---------- daily 5 (same for everyone; resets at midnight IST) ----------
   const DAILY_WEIGHTS = [100, 150, 200, 250, 300];
@@ -742,7 +849,9 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const tick = () => {
       const left = Math.max(0, end - performance.now());
       $("timerBar").style.width = (left / (timeLimit * 10)) + "%";
-      clock.textContent = Math.ceil(left / 1000);
+      const sec = Math.ceil(left / 1000);
+      if (sec !== +clock.textContent && sec <= 5 && sec > 0) sfx.tick();
+      clock.textContent = sec;
       clock.classList.toggle("low", left < 5000);
       if (left <= 0) { clearInterval(timerId); timeUp(); }
     };
@@ -754,7 +863,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   function ask() {
     const q = game.qs[game.i]; game.cur = { q, hint: false, done: false, pending: null };
     clearMarks(); clearStateClasses(); updateStats();
-    $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true;
+    $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true; $("sheet").hidden = false;
     $("pEyebrow").textContent = game.daily ? `Daily #${dailyNo()} · ${game.i + 1} of 5 · worth ${maxPts()}` : `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
     $("hintBtn").hidden = false; $("hintText").textContent = "";
     $("hintBtn").textContent = q.isState ? "Capital (½ pts)" : "State (½ pts)";
@@ -816,10 +925,12 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       }
       for (const p of Object.values(statePaths)) p.classList.remove("picked");
       if (picked) statePaths[picked]?.classList.add("picked");
+      sfx.pick();
       game.cur.pending = { picked };
       $("hintText").textContent = picked ? (picked === "Jammu & Kashmir and Ladakh" ? "J&K / Ladakh selected" : `${picked} selected`) : "That's the sea";
     } else {
       game.cur.pending = { x, y };
+      sfx.tap();
       if (game.daily) return confirmGuess();
       gMarks.querySelectorAll(".m-guess").forEach((e) => e.remove());
       circle(x, y, 7, "m-guess"); applyView();
@@ -841,15 +952,52 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     if (game.cur.hint) pts = Math.round(pts / 2);
     game.cur.f = f;
     clearMarks();
-    svgEl("line", { x1: x, y1: y, x2: q.x, y2: q.y, class: "m-line" }, gMarks);
     circle(x, y, 6, "m-guess");
-    circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer");
-    label(q.x, q.y, q.name);
     const dx = Math.abs(x - q.x), dy = Math.abs(y - q.y);
     flyToPlay((x + q.x) / 2, (y + q.y) / 2, Math.min(W * 1.12, Math.max(dx * 2, dy * 2.4 * W / H, 120)));
     const verdict = d < 25 ? ["Bullseye!", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
     record(q, d < 150, pts, d);
-    feedback(verdict, pts, `Your pin was <b>${Math.round(d).toLocaleString("en-IN")} km</b> away.`);
+    game.cur.animating = true;
+    $("hintRow").hidden = true; $("sheet").hidden = true;
+    flight(x, y, q.x, q.y, d, () => {
+      circle(q.x, q.y, 10, "m-ring shock"); circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer pop");
+      label(q.x, q.y, q.name); applyView();
+      sfx.land(f);
+      game.cur.animating = false;
+      feedback(verdict, pts, `Your pin was <b>${Math.round(d).toLocaleString("en-IN")} km</b> away.`);
+    });
+  }
+  // dashed flight path drawn from the guess to the answer, with a glowing head and a live km counter
+  function flight(x0, y0, x1, y1, km, done) {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (reduceMotion || len < 2) {
+      if (len >= 2) svgEl("path", { d: `M${x0},${y0}L${x1},${y1}`, class: "m-arc" }, gMarks);
+      return done();
+    }
+    // control point: bulge sideways by a quarter of the distance, always arcing "upward" on screen
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, nx = -(y1 - y0) / len, ny = (x1 - x0) / len, side = ny > 0 ? -1 : 1, b = len * 0.28;
+    const cx = mx + nx * b * side, cy = my + ny * b * side;
+    const arc = svgEl("path", { class: "m-arc" }, gMarks);
+    const glow = circle(x0, y0, 11, "m-glow"), head = circle(x0, y0, 5, "m-comet");
+    const kmT = svgEl("text", { "data-fs": 13, class: "m-km", "text-anchor": "middle" }, gMarks);
+    const dur = 700 + Math.min(1100, km * 0.9), delay = 450, t0 = performance.now() + delay;
+    sfx.whoosh((dur + 150) / 1000);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const step = (now) => {
+      if (!game?.cur?.animating) return;
+      const k = Math.min(1, Math.max(0, (now - t0) / dur)), t = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      // partial quadratic bezier by de Casteljau: P0, lerp(P0,C,t), B(t)
+      const qx = lerp(x0, cx, t), qy = lerp(y0, cy, t), rx = lerp(cx, x1, t), ry = lerp(cy, y1, t);
+      const bx = lerp(qx, rx, t), by = lerp(qy, ry, t);
+      arc.setAttribute("d", `M${x0},${y0}Q${qx},${qy} ${bx},${by}`);
+      for (const c of [glow, head]) { c.setAttribute("cx", bx); c.setAttribute("cy", by); }
+      const u = 1 / ppu();
+      kmT.setAttribute("x", bx); kmT.setAttribute("y", by - 14 * u);
+      kmT.textContent = `${Math.round(km * t).toLocaleString("en-IN")} km`;
+      if (k < 1) requestAnimationFrame(step);
+      else { glow.remove(); head.remove(); kmT.remove(); done(); }
+    };
+    requestAnimationFrame(step);
   }
   function finishState(q, picked) {
     const ok = picked === q.name;
@@ -859,7 +1007,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     if (!ok && picked && statePaths[picked]) statePaths[picked].classList.add("wrong");
     const c = stateCentroid(q.name); label(c[0], c[1], q.name);
     if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, 160)));
-    record(q, ok, pts, null);
+    record(q, ok, pts, null); sfx.land(ok ? 1 : 0);
     const tapped = !picked ? "You picked the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You picked Jammu & Kashmir / Ladakh." : `You picked ${esc(picked)}.`;
     feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state." : `${tapped} The shaded one is ${esc(q.name)}.`);
   }
@@ -874,7 +1022,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       else statePaths[o.name]?.classList.add("wrong");
     }
     if (!q.isState) label(q.x, q.y, q.name); else { const c = stateCentroid(q.name); label(c[0], c[1], q.name); }
-    record(q, ok, pts, null);
+    record(q, ok, pts, null); sfx.land(ok ? 1 : 0);
     if (!o) return feedback(["Time's up", "bad"], 0, `The answer is ${esc(q.name)}.`);
     const where = o.isState ? "" : (!ok ? ` ${esc(o.name)} is in ${esc(o.state)}.` : "");
     feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted." : `The answer is ${esc(q.name)}.${where}`);
@@ -887,7 +1035,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     clearMarks(); clearStateClasses();
     if (q.isState) { statePaths[q.name].classList.add("target"); const cc = stateCentroid(q.name); label(cc[0], cc[1], q.name); flyToPlay(cc[0], cc[1], Math.min(W * 1.12, Math.max(cc[2] * 3, 160))); }
     else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyToPlay(q.x, q.y, 220); }
-    record(q, false, 0, null);
+    record(q, false, 0, null); sfx.land(0);
     feedback(["Time's up", "bad"], 0, "No pin was placed this round.");
   }
   function record(q, ok, pts, d) {
@@ -901,9 +1049,14 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   }
   function feedback([v, cls], pts, detail) {
     const q = game.cur.q;
-    $("hintRow").hidden = true; $("feedback").hidden = false;
+    $("hintRow").hidden = true; $("feedback").hidden = false; $("sheet").hidden = false;
     $("fVerdict").textContent = v; $("fVerdict").className = cls;
-    $("fPoints").textContent = game.daily ? `+${pts} / ${maxPts()}` : `+${pts.toLocaleString("en-IN")}`;
+    const ptsText = (v) => game.daily ? `+${v} / ${maxPts()}` : `+${v.toLocaleString("en-IN")}`;
+    $("fPoints").textContent = ptsText(reduceMotion ? pts : 0);
+    if (!reduceMotion && pts) { const t0 = performance.now(), cur = game.cur;
+      const up = (now) => { if (game.cur !== cur) return; const k = Math.min(1, (now - t0) / 700); $("fPoints").textContent = ptsText(Math.round(pts * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(up); };
+      requestAnimationFrame(up); }
+    $("feedback").classList.remove("reveal"); void $("feedback").offsetWidth; $("feedback").classList.add("reveal");
     $("fBar").style.width = "0%";
     requestAnimationFrame(() => requestAnimationFrame(() => { $("fBar").style.width = (pts / maxPts() * 100) + "%"; }));
     $("fDetail").innerHTML = detail;
@@ -919,6 +1072,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     if (views.play.hidden || !game) return;
     if (e.target.tagName === "INPUT") return;
     if (e.key === "Enter" || e.key === " ") {
+      if (game.cur.animating) { e.preventDefault(); return; }
       if (game.cur.done && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click(); }
       else if (!game.cur.done && game.cur.pending && document.activeElement !== $("confirmBtn")) { e.preventDefault(); confirmGuess(); }
     }
@@ -930,6 +1084,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       const r = game.results;
       const rec = { n: dailyNo(), score: game.score, grid: r.map((x) => emoji(x.f)).join(""), items: r.map((x) => [x.q.id, x.d == null ? null : Math.round(x.d), x.pts]) };
       const log = dailyLog(); log[todayKey()] = rec; store.set("daily", log);
+      sfx.fanfare(game.score / 1000);
       return showDailyResult(rec);
     }
     $("rDaily").hidden = $("rGrid").hidden = true; $("rStars").hidden = false; $("againBtn").hidden = false;
@@ -942,6 +1097,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     if (isTopicRun && game.score > prevBest && n >= 10) { best[key] = game.score; store.set("best", best); }
     const ds = r.filter((x) => x.d != null).map((x) => x.d);
     const frac = game.score / (n * 1000);
+    sfx.fanfare(frac);
     $("rStars").textContent = "★★★".slice(0, frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0).padEnd(3, "☆");
     $("rStars").setAttribute("aria-label", `${frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0} of 3 stars`);
     $("rTopic").textContent = `${game.topicLabel} · ${mode === "pin" ? "Pin it" : "Spot it"}`;

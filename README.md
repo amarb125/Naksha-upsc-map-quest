@@ -4,7 +4,7 @@ An India map quiz game for UPSC Prelims map questions. It's a plain static site 
 
 ## Daily 5
 
-Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
+Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each; the last three are indirect clues. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
 
 ## Sound and animation
 
@@ -16,11 +16,14 @@ The map fills the screen. A question card at the top shows the place and a count
 
 ## Modes
 
+- **Clue hunt**: indirect, UPSC-style questions. You get a clue (for example *"The world's only floating national park…"*) instead of the name, and pin the place it describes.
+- **Level: Tough**: stricter distance scoring, no hints, and in Spot it the four choices are the nearest look-alike places from the same topic.
+
 - **Pin it**: a place is named; tap where it is on India's map. Points fall with distance (1,000 within 15 km).
 - **Spot it**: a place is marked (or a state shaded); choose its name from four options.
 - **Revise**: every place in a topic shown on the map, with search and the UPSC fact for each.
 
-Topics (275 places + 34 States/UTs): national parks & tiger reserves; lakes, wetlands & Ramsar sites; mountain passes & peaks; rivers, dams & waterfalls; history, art & culture; ports, islands, straits & space; minerals, energy & industry; States & UTs.
+Topics (447 places + 34 States/UTs): national parks & tiger reserves; lakes, wetlands & Ramsar sites; mountain passes & peaks; rivers, dams & waterfalls; history, art & culture; ports, islands, straits & space; minerals, energy & industry; States & UTs.
 
 Places you miss are saved in your browser under **My weak spots** and leave the list once you get them right. The Tropic of Cancer and the 82°30′E standard meridian are drawn as guide lines.
 

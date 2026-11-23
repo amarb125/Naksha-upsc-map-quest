@@ -11,11 +11,12 @@
 <style>
 /* Layout: one-screen atlas — the survey map fills the left, a field-notebook panel sits right (stacks under the map on phones). */
 :root {
-  --sea: #d6e4e8;
-  --sea-line: #b6cbd2;
-  --land: #eef0e2;
-  --land-hover: #dfe6c6;
-  --border: #8c9a83;
+  --sea: #cbe0e8;
+  --sea-line: #b3cdd6;
+  --land: #f7f7ee;
+  --land-hover: #e6ecce;
+  --border: #8f9a86;
+  --outline: #3d4f47;
   --ink: #1b2e35;
   --muted: #5b6d72;
   --paper: #f7f8f4;
@@ -28,8 +29,8 @@
   --bad: #c2462e;
   --target: #f2c66d;
   --guide: #b0574a;
-  --nb-land: #e2e2d8;
-  --nb-border: #b9bcb0;
+  --nb-land: #e4e5df;
+  --nb-border: #c3c6bb;
   --river: #5b9bb5;
   --relief: #8a6d4b;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
@@ -38,14 +39,14 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
+    --sea: #13232a; --sea-line: #20363f; --land: #2c3a37; --land-hover: #37483f; --border: #5f7468; --outline: #b5c9bc;
     --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
     --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
     --target: #8a6a26; --guide: #d98a7c; --nb-land: #1f2a2b; --nb-border: #3a4a4a; --river: #4f93ad; --relief: #c7a57c; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
+  --sea: #13232a; --sea-line: #20363f; --land: #2c3a37; --land-hover: #37483f; --border: #5f7468; --outline: #b5c9bc;
   --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
   --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
   --target: #8a6a26; --guide: #d98a7c; --nb-land: #1f2a2b; --nb-border: #3a4a4a; --river: #4f93ad; --relief: #c7a57c; color-scheme: dark;
@@ -82,7 +83,8 @@ button { cursor: pointer; }
 .mapwrap { position: relative; min-height: 0; background: var(--sea); overflow: hidden; }
 #map { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
 #map.crosshair { cursor: crosshair; }
-.state { fill: var(--land); stroke: var(--border); stroke-width: 0.7; vector-effect: non-scaling-stroke; stroke-linejoin: round; transition: fill .15s; }
+.india-outline { fill: none; stroke: var(--outline); stroke-width: 1.4; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.state { fill: var(--land); stroke: var(--border); stroke-width: 0.8; vector-effect: non-scaling-stroke; stroke-linejoin: round; transition: fill .15s; }
 .statepick .state:hover { fill: var(--land-hover); }
 .state.target { fill: var(--target); }
 .state.wrong { fill: color-mix(in srgb, var(--bad) 35%, var(--land)); }
@@ -93,7 +95,8 @@ button { cursor: pointer; }
 .river { fill: none; stroke: var(--river); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; }
 .lake { fill: color-mix(in srgb, var(--river) 55%, var(--sea)); stroke: var(--river); stroke-width: .5; vector-effect: non-scaling-stroke; }
 #relief.far { visibility: hidden; }
-.relief-label { fill: var(--relief); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.22em; opacity: .75; }
+#water.far .minor { display: none; }
+.relief-label { paint-order: stroke; stroke: var(--land); stroke-width: 3px; stroke-linejoin: round; fill: var(--relief); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.22em; opacity: .75; }
 .river-label { fill: var(--river); font-family: var(--f-body); font-style: italic; font-weight: 500; opacity: .95; }
 .m-arc { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 7 5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .m-comet { fill: var(--pin); }
@@ -107,7 +110,7 @@ button { cursor: pointer; }
   .feedback.reveal { animation: rise .35s ease-out both; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 }
-.grid line { stroke: var(--sea-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.grid line { stroke: var(--sea-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; opacity: .6; }
 .guide line { stroke: var(--guide); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
 .guide text, .sea-label { fill: var(--muted); font-family: var(--f-mono); }
 .guide text { fill: var(--guide); }
@@ -139,7 +142,7 @@ h2 { font: 600 12px/1 var(--f-body); text-transform: uppercase; letter-spacing: 
 p { margin: 0; }
 .lead { color: var(--muted); }
 
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
 .seg button { border: 0; background: none; padding: 8px 6px; border-radius: 7px; font-weight: 600; font-size: 14px; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .modehelp { font-size: 13px; color: var(--muted); margin-top: 6px; }
@@ -156,6 +159,9 @@ p { margin: 0; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .chips { display: flex; gap: 6px; }
 .chip { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 4px 12px; font: 500 13px/1.4 var(--f-mono); }
+.lvhelp { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.qcard .q.clue { font: 600 18px/1.35 var(--f-body); letter-spacing: 0; }
+.qcard .q.clue .mask { display: inline-block; min-width: 2.2em; border-bottom: 2px solid var(--pin); color: transparent; user-select: none; }
 .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .btn { border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
 .btn.ghost { background: none; color: var(--accent); border: 1px solid var(--line); }
@@ -313,6 +319,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       <g id="seaLabels"></g>
       <g id="states"></g>
       <g id="water"></g>
+      <path id="outline" class="india-outline"></path>
       <g id="relief"></g>
       <g class="guide" id="guide"></g>
       <g id="dots"></g>
@@ -396,7 +403,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       <div class="daily" id="dailyCard">
         <div class="dtop"><span id="dLabel">Daily</span><span class="streak" id="dStreak" title="Days in a row">🔥 0</span></div>
         <div class="dtitle">Today's 5</div>
-        <p id="dText">Five UPSC places, one tap each. Later places are worth more. A perfect day scores 1,000.</p>
+        <p id="dText">Five UPSC places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
         <div class="dgrid" id="dGrid" hidden></div>
         <div class="drow">
           <button type="button" class="btn" id="dailyBtn">Play today's 5</button>
@@ -412,6 +419,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <h2>Mode</h2>
         <div class="seg" role="group" aria-label="Game mode">
           <button type="button" data-mode="pin" aria-pressed="true">Pin it</button>
+          <button type="button" data-mode="clue" aria-pressed="false">Clue hunt</button>
           <button type="button" data-mode="spot" aria-pressed="false">Spot it</button>
           <button type="button" data-mode="learn" aria-pressed="false">Revise</button>
         </div>
@@ -428,6 +436,14 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
           <button type="button" class="chip" data-n="20" aria-pressed="false">20</button>
           <button type="button" class="chip" data-n="30" aria-pressed="false">30</button>
         </div>
+      </div>
+      <div class="row" id="levelRow">
+        <h2 style="margin:0">Level</h2>
+        <div class="chips" role="group" aria-label="Difficulty">
+          <button type="button" class="chip" data-lv="normal" aria-pressed="true">Normal</button>
+          <button type="button" class="chip" data-lv="tough" aria-pressed="false">Tough</button>
+        </div>
+        <span class="lvhelp" id="lvHelp"></span>
       </div>
       <div class="row" id="timerRow">
         <h2 style="margin:0">Timer</h2>
@@ -499,6 +515,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   const STATE_ALIAS = { "Ladakh": "Jammu & Kashmir and Ladakh", "Jammu & Kashmir": "Jammu & Kashmir and Ladakh" };
   const ITEMS = [];
   const TOPICS = [];
+  for (const c of window.CATEGORIES) if (window.EXTRA_PLACES?.[c.id]) { c.places = c.places.concat(window.EXTRA_PLACES[c.id]); window.EXTRA_PLACES[c.id] = null; }
   for (const c of window.CATEGORIES) {
     const list = c.places.map(([name, lat, lon, state, fact]) => {
       const [x, y] = proj(lat, lon);
@@ -521,6 +538,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   const svg = $("map");
   const gStates = $("states"), gDots = $("dots"), gMarks = $("marks");
   const statePaths = {};
+  if (window.INDIA_OUTLINE) $("outline").setAttribute("d", window.INDIA_OUTLINE);
   for (const [name, d] of Object.entries(window.INDIA_MAP)) {
     const p = svgEl("path", { d, class: "state", "data-state": name }, gStates);
     statePaths[name] = p;
@@ -544,7 +562,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     if (X.lakes) svgEl("path", { d: X.lakes, class: "lake" }, gW);
     for (const [name, rank, d] of X.rivers) {
       const w = rank <= 3 ? 1.5 : rank <= 6 ? 1.1 : 0.8;
-      const pth = svgEl("path", { d, class: "river", "stroke-width": w }, gW);
+      const pth = svgEl("path", { d, class: rank >= 7 ? "river minor" : "river", "stroke-width": w }, gW);
       if (name) { const t = svgEl("title", {}, pth); t.textContent = name; }
     }
     const gR = $("relief");
@@ -581,6 +599,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
     const u = 1 / ppu(); // map units per screen pixel
     $("relief").classList.toggle("far", ppu() < 0.9);
+    $("water").classList.toggle("far", ppu() < 1.6);
     svg.querySelectorAll("[data-r]").forEach((e) => e.setAttribute("r", e.dataset.r * u));
     svg.querySelectorAll("[data-fs]").forEach((e) => e.setAttribute("font-size", e.dataset.fs * u * 1.15));
     svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
@@ -676,9 +695,11 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     applyView(); requestAnimationFrame(applyView);
   }
 
-  let mode = "pin", topicId = "mix", rounds = 10, timeLimit = store.get("timer", 30);
+  let mode = "pin", topicId = "mix", rounds = 10, timeLimit = store.get("timer", 30), tough = store.get("tough", false);
+  const pinLike = () => mode === "pin" || mode === "clue";
   const MODE_HELP = {
     pin: "A place is named. Tap where it is on the map. Closer taps score more (up to 1,000).",
+    clue: "Indirect questions: you get a UPSC-style clue, not the name. Work out the place and pin it.",
     spot: "A place is marked on the map. Pick its name from four options.",
     learn: "No score. See every place in a topic on the map with its fact, for quick revision.",
   };
@@ -686,14 +707,16 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     renderDaily();
     document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
     $("modeHelp").textContent = MODE_HELP[mode];
-    $("roundsRow").hidden = $("timerRow").hidden = mode === "learn";
+    $("roundsRow").hidden = $("timerRow").hidden = $("levelRow").hidden = mode === "learn";
+    document.querySelectorAll("[data-lv]").forEach((c) => c.setAttribute("aria-pressed", (c.dataset.lv === "tough") === tough));
+    $("lvHelp").textContent = tough ? "Tough: stricter distance scoring, no hints, and look-alike answer choices." : "Normal: generous scoring, hints allowed.";
     document.querySelectorAll("[data-t]").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.t === timeLimit));
     $("startBtn").textContent = mode === "learn" ? "Open revision map" : "Start";
     const box = $("topics"); box.replaceChildren();
     for (const t of TOPICS) {
       const n = t.items.length; const b = document.createElement("button");
       b.type = "button"; b.className = "topic"; b.setAttribute("aria-pressed", t.id === topicId);
-      const bs = best[mode + ":" + t.id];
+      const bs = best[mode + ":" + t.id + (tough ? ":tough" : "")];
       const meta = t.id === "weak" ? (n ? `${n} to fix` : "none yet") : `${n} places${bs ? ` · best ${bs}` : ""}`;
       b.innerHTML = `<span class="ic" aria-hidden="true">${t.icon}</span><span class="nm">${esc(t.title)}</span><span class="meta">${meta}</span>`;
       if (!n) b.disabled = true;
@@ -712,6 +735,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   document.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => {
     rounds = +b.dataset.n; document.querySelectorAll("[data-n]").forEach((c) => c.setAttribute("aria-pressed", c === b));
   });
+  document.querySelectorAll("[data-lv]").forEach((b) => b.onclick = () => { tough = b.dataset.lv === "tough"; store.set("tough", tough); renderHome(); });
   document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { timeLimit = +b.dataset.t; store.set("timer", timeLimit); renderHome(); });
   $("startBtn").onclick = () => mode === "learn" ? openLearn(topicId) : startGame(topicById(topicId).items);
   $("homeBtn").onclick = goHome;
@@ -761,6 +785,18 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   $("soundBtn").onclick = () => { sfx.on = !sfx.on; renderSoundBtn(); if (sfx.on) sfx.pick(); };
   renderSoundBtn();
 
+  // ---------- indirect clues: the place's fact with its name masked ----------
+  const GENERIC = new Set("national park tiger reserve wildlife sanctuary bird lake wetland dam falls port island islands pass peak valley temple temples caves cave fort river project plant steel coalfield field mines mine hills hill marine gulf channel strait bridge barrage hydro reservoir sagar estuary nuclear power solar wind farm renewable energy oil".split(" "));
+  const reEsc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function clueHtml(it) {
+    const text = it.isState ? (window.STATE_CLUES?.[it.name] || it.fact) : it.fact;
+    const words = it.name.replace(/[()/]/g, " ").split(/[^A-Za-z\u00C0-\u024F'-]+/).filter((w) => w.length >= 4 && !GENERIC.has(w.toLowerCase()));
+    let html = esc(text);
+    for (const w of words) html = html.replace(new RegExp(`\\b${reEsc(esc(w))}[a-z]*`, "gi"), '<span class="mask" aria-label="hidden word">▢▢▢</span>');
+    return html;
+  }
+  const isClueQ = () => mode === "clue" || (game?.daily && game.i >= 2);
+
   // ---------- daily 5 (same for everyone; resets at midnight IST) ----------
   const DAILY_WEIGHTS = [100, 150, 200, 250, 300];
   const IST = 5.5 * 3600e3;
@@ -804,7 +840,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       $("dGrid").textContent = rec.grid; $("dailyBtn").textContent = "See today's result";
       $("dNext").textContent = `Next Daily in ${fmtLeft(msToNext())}`;
     } else {
-      $("dText").textContent = "Five UPSC places, one tap each. Later places are worth more. A perfect day scores 1,000.";
+      $("dText").textContent = "Five UPSC places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.";
       $("dailyBtn").textContent = "Play today's 5"; $("dNext").textContent = "Same five places for everyone today. New set at midnight IST.";
     }
   }
@@ -865,15 +901,22 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     clearMarks(); clearStateClasses(); updateStats();
     $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true; $("sheet").hidden = false;
     $("pEyebrow").textContent = game.daily ? `Daily #${dailyNo()} · ${game.i + 1} of 5 · worth ${maxPts()}` : `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
-    $("hintBtn").hidden = false; $("hintText").textContent = "";
-    $("hintBtn").textContent = q.isState ? "Capital (½ pts)" : "State (½ pts)";
-    $("confirmBtn").hidden = mode !== "pin" || !!game.daily; $("confirmBtn").disabled = true;
+    const clue = game.cur.clue = isClueQ();
+    $("hintBtn").hidden = tough && !game.daily; $("hintText").textContent = "";
+    $("hintBtn").textContent = clue ? "Name it (½ pts)" : q.isState ? "Capital (½ pts)" : "State (½ pts)";
+    $("confirmBtn").hidden = !pinLike() || !!game.daily; $("confirmBtn").disabled = true;
     if (game.daily) { $("hintBtn").hidden = true; $("hintText").textContent = `${q.catTitle}`; }
-    svg.classList.toggle("statepick", mode === "pin" && !!q.isState);
-    svg.classList.toggle("crosshair", mode === "pin" && !q.isState);
-    if (mode === "pin") {
-      $("pQ").textContent = q.name;
-      $("pSub").textContent = game.daily ? "One tap answers. Zoom first if you need to." : q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
+    svg.classList.toggle("statepick", pinLike() && !!q.isState);
+    svg.classList.toggle("crosshair", pinLike() && !q.isState);
+    $("pQ").classList.toggle("clue", clue);
+    if (pinLike()) {
+      if (clue) {
+        $("pEyebrow").textContent = game.daily ? `Daily #${dailyNo()} · ${game.i + 1} of 5 · clue · worth ${maxPts()}` : `Clue · ${q.isState ? "State or UT" : q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
+        $("pQ").innerHTML = clueHtml(q);
+      } else $("pQ").textContent = q.name;
+      $("pSub").textContent = game.daily ? (clue ? "Which place is this? One tap answers." : "One tap answers. Zoom first if you need to.")
+        : clue ? (q.isState ? "Tap the state or UT this describes, then confirm." : "Pin the place this describes, then confirm.")
+        : q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
       playReset();
     } else {
       $("pQ").textContent = q.isState ? "Which state or UT is shaded?" : "Which place is marked?";
@@ -892,9 +935,17 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   }
   function renderOptions(q) {
     const same = (q.isState ? stateItems : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
-    let pool = same.filter((i) => i.id !== q.id && (q.isState || haversine(q.lat, q.lon, i.lat, i.lon) > 120));
-    if (pool.length < 3) pool = (q.isState ? stateItems : ITEMS.filter((i) => !i.isState)).filter((i) => i.id !== q.id);
-    const opts = shuffle([q, ...shuffle(pool).slice(0, 3)]);
+    let opts;
+    if (tough) {
+      // look-alike choices: nearest places from the same topic (but not on top of the answer)
+      const cand = q.isState ? stateItems.filter((i) => i.id !== q.id && statePaths[i.name]) : same.filter((i) => haversine(q.lat, q.lon, i.lat, i.lon) > 40);
+      const dist = (i) => { if (!q.isState) return haversine(q.lat, q.lon, i.lat, i.lon); const a = stateCentroid(q.name), b = stateCentroid(i.name); return a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 1e9; };
+      opts = shuffle([q, ...cand.sort((a, b) => dist(a) - dist(b)).slice(0, 3)]);
+    } else {
+      let pool = same.filter((i) => i.id !== q.id && (q.isState || haversine(q.lat, q.lon, i.lat, i.lon) > 120));
+      if (pool.length < 3) pool = (q.isState ? stateItems : ITEMS.filter((i) => !i.isState)).filter((i) => i.id !== q.id);
+      opts = shuffle([q, ...shuffle(pool).slice(0, 3)]);
+    }
     const box = $("options"); box.replaceChildren(); box.hidden = false;
     opts.forEach((o, k) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.id = o.id;
@@ -906,15 +957,16 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const c = game?.cur; if (!c || c.done || c.hint) return;
     c.hint = true; $("hintBtn").hidden = true;
     const q = c.q;
+    if (c.clue) { $("hintText").textContent = q.name; return; }
     if (q.isState) { $("hintText").textContent = `Capital: ${q.capital}`; return; }
     $("hintText").textContent = `In ${q.state}`;
     const sp = statePaths[STATE_ALIAS[q.state] || q.state];
-    if (sp) { sp.classList.add("hint"); if (mode === "pin") { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, 90))); } }
+    if (sp) { sp.classList.add("hint"); if (pinLike()) { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, 90))); } }
   };
 
   function onMapTap(x, y, target) {
     if (views.learn.hidden === false) return learnTap(target);
-    if (!game || views.play.hidden || game.cur.done || mode !== "pin") return;
+    if (!game || views.play.hidden || game.cur.done || !pinLike()) return;
     const q = game.cur.q;
     if (q.isState) {
       let picked = target?.closest?.("[data-state]")?.dataset.state || null;
@@ -947,7 +999,8 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   function finishPin(q, x, y) {
     const [glat, glon] = unproj(x, y);
     const d = haversine(glat, glon, q.lat, q.lon);
-    const f = d <= 15 ? 1 : Math.exp(-(d - 15) / 150);
+    const hard = tough && !game.daily;
+    const f = d <= (hard ? 8 : 15) ? 1 : Math.exp(-(d - (hard ? 8 : 15)) / (hard ? 70 : 150));
     let pts = Math.round(maxPts() * f);
     if (game.cur.hint) pts = Math.round(pts / 2);
     game.cur.f = f;
@@ -956,7 +1009,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const dx = Math.abs(x - q.x), dy = Math.abs(y - q.y);
     flyToPlay((x + q.x) / 2, (y + q.y) / 2, Math.min(W * 1.12, Math.max(dx * 2, dy * 2.4 * W / H, 120)));
     const verdict = d < 25 ? ["Bullseye!", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
-    record(q, d < 150, pts, d);
+    record(q, d < (hard ? 75 : 150), pts, d);
     game.cur.animating = true;
     $("hintRow").hidden = true; $("sheet").hidden = true;
     flight(x, y, q.x, q.y, d, () => {
@@ -1091,7 +1144,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     $("rL1").textContent = "Correct"; $("rL3").textContent = "Best"; $("changeBtn").textContent = "Change topic";
     stopTimer(); clearMarks(); clearStateClasses();
     const r = game.results, n = r.length, correct = r.filter((x) => x.ok).length;
-    const key = mode + ":" + topicId;
+    const key = mode + ":" + topicId + (tough ? ":tough" : "");
     const prevBest = best[key] || 0;
     const isTopicRun = !game.custom;
     if (isTopicRun && game.score > prevBest && n >= 10) { best[key] = game.score; store.set("best", best); }
@@ -1100,7 +1153,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     sfx.fanfare(frac);
     $("rStars").textContent = "★★★".slice(0, frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0).padEnd(3, "☆");
     $("rStars").setAttribute("aria-label", `${frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0} of 3 stars`);
-    $("rTopic").textContent = `${game.topicLabel} · ${mode === "pin" ? "Pin it" : "Spot it"}`;
+    $("rTopic").textContent = `${game.topicLabel} · ${({ pin: "Pin it", clue: "Clue hunt", spot: "Spot it" })[mode]}${tough ? " · Tough" : ""}`;
     $("rScore").textContent = game.score.toLocaleString("en-IN");
     $("rNote").textContent = `out of ${(n * 1000).toLocaleString("en-IN")}` + (isTopicRun && game.score > prevBest && prevBest && n >= 10 ? " · new best!" : "");
     $("rCorrect").textContent = `${correct}/${n}`;

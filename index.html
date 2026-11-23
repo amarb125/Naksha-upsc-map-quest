@@ -698,9 +698,9 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   let mode = "pin", topicId = "mix", rounds = 10, timeLimit = store.get("timer", 30), tough = store.get("tough", false);
   const pinLike = () => mode === "pin" || mode === "clue";
   const MODE_HELP = {
-    pin: "A place is named. Tap where it is on the map. Closer taps score more (up to 1,000).",
+    pin: "A place is named. Tap where it is on the map. You score 1,000 minus 1 point for every km you are off.",
     clue: "Indirect questions: you get an exam-style clue, not the name. Work out the place and pin it.",
-    spot: "A place is marked on the map. Pick its name from four options.",
+    spot: "A place is marked on the map. Pick its name from four options. A wrong pick loses 1 point per km between it and the answer.",
     learn: "No score. See every place in a topic on the map with its fact, for quick revision.",
   };
   function renderHome() {
@@ -709,7 +709,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     $("modeHelp").textContent = MODE_HELP[mode];
     $("roundsRow").hidden = $("timerRow").hidden = $("levelRow").hidden = mode === "learn";
     document.querySelectorAll("[data-lv]").forEach((c) => c.setAttribute("aria-pressed", (c.dataset.lv === "tough") === tough));
-    $("lvHelp").textContent = tough ? "Tough: stricter distance scoring, no hints, and look-alike answer choices." : "Normal: generous scoring, hints allowed.";
+    $("lvHelp").textContent = tough ? "Tough: lose 2 points per km (500 km off scores 0), no hints, look-alike choices." : "Normal: lose 1 point per km (1,000 km off scores 0). Hints halve the score.";
     document.querySelectorAll("[data-t]").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.t === timeLimit));
     $("startBtn").textContent = mode === "learn" ? "Open revision map" : "Start";
     const box = $("topics"); box.replaceChildren();
@@ -978,7 +978,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       for (const p of Object.values(statePaths)) p.classList.remove("picked");
       if (picked) statePaths[picked]?.classList.add("picked");
       sfx.pick();
-      game.cur.pending = { picked };
+      game.cur.pending = { picked, x, y };
       $("hintText").textContent = picked ? (picked === "Jammu & Kashmir and Ladakh" ? "J&K / Ladakh selected" : `${picked} selected`) : "That's the sea";
     } else {
       game.cur.pending = { x, y };
@@ -992,17 +992,42 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   }
   function confirmGuess() {
     const c = game?.cur; if (!c || c.done || !c.pending) return;
-    if (c.q.isState) finishState(c.q, c.pending.picked); else finishPin(c.q, c.pending.x, c.pending.y);
+    if (c.q.isState) finishState(c.q, c.pending.picked, c.pending.x, c.pending.y); else finishPin(c.q, c.pending.x, c.pending.y);
   }
   $("confirmBtn").onclick = confirmGuess;
+
+  // ---- scoring by error: lose a fixed number of points for every km you are off ----
+  const lossPerKm = () => maxPts() * ((tough && !game.daily) ? 2 : 1) / 1000;   // 1 pt/km out of 1,000 (2 on Tough)
+  function scoreFor(err) {
+    err = Math.round(err);
+    const max = maxPts();
+    const base = err <= 5 ? max : Math.max(0, Math.round(max - err * lossPerKm()));
+    const pts = game.cur.hint ? Math.round(base / 2) : base;
+    return { pts, base, f: base / max };
+  }
+  function scoreLine(err, sc, lead = "Error:") {
+    err = Math.round(err);
+    const max = maxPts(), rate = lossPerKm();
+    const rateTxt = `${+rate.toFixed(2)} ${rate === 1 ? "point" : "points"} per km`;
+    let t = err <= 5 ? `${lead} <b>${err} km</b>. Within 5 km scores the full ${max.toLocaleString("en-IN")}.`
+      : `${lead} <b>${err.toLocaleString("en-IN")} km</b>. At ${rateTxt}: ${max.toLocaleString("en-IN")} − ${(max - sc.base).toLocaleString("en-IN")} = <b>${sc.base.toLocaleString("en-IN")}</b>.`;
+    if (game.cur.hint) t += ` Halved for the hint: <b>${sc.pts.toLocaleString("en-IN")}</b>.`;
+    return t;
+  }
+  // km from a tapped point to the nearest edge of a state (0 if inside it)
+  function kmToState(name, x, y) {
+    const p = statePaths[name]; if (!p) return 0;
+    const [la, lo] = unproj(x, y); const L = p.getTotalLength(); let best = Infinity;
+    for (let i = 0; i <= 600; i++) { const pt = p.getPointAtLength(L * i / 600); const [a, b] = unproj(pt.x, pt.y); best = Math.min(best, haversine(la, lo, a, b)); }
+    return best;
+  }
+  const centroidLL = (name) => { const c = stateCentroid(name); return c ? unproj(c[0], c[1]) : null; };
 
   function finishPin(q, x, y) {
     const [glat, glon] = unproj(x, y);
     const d = haversine(glat, glon, q.lat, q.lon);
     const hard = tough && !game.daily;
-    const f = d <= (hard ? 8 : 15) ? 1 : Math.exp(-(d - (hard ? 8 : 15)) / (hard ? 70 : 150));
-    let pts = Math.round(maxPts() * f);
-    if (game.cur.hint) pts = Math.round(pts / 2);
+    const sc = scoreFor(d), pts = sc.pts, f = sc.f;
     game.cur.f = f;
     clearMarks();
     circle(x, y, 6, "m-guess");
@@ -1017,7 +1042,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       label(q.x, q.y, q.name); applyView();
       sfx.land(f);
       game.cur.animating = false;
-      feedback(verdict, pts, `Your pin was <b>${Math.round(d).toLocaleString("en-IN")} km</b> away.`);
+      feedback(verdict, pts, scoreLine(d, sc));
     });
   }
   // dashed flight path drawn from the guess to the answer, with a glowing head and a live km counter
@@ -1052,22 +1077,28 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     };
     requestAnimationFrame(step);
   }
-  function finishState(q, picked) {
+  function finishState(q, picked, x, y) {
     const ok = picked === q.name;
-    const pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
+    const err = ok ? 0 : kmToState(q.name, x, y);
+    const sc = scoreFor(err), pts = sc.pts; game.cur.f = sc.f;
     clearStateClasses();
     statePaths[q.name].classList.add("target");
     if (!ok && picked && statePaths[picked]) statePaths[picked].classList.add("wrong");
     const c = stateCentroid(q.name); label(c[0], c[1], q.name);
     if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, 160)));
-    record(q, ok, pts, null); sfx.land(ok ? 1 : 0);
+    record(q, ok, pts, err); sfx.land(sc.f);
     const tapped = !picked ? "You picked the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You picked Jammu & Kashmir / Ladakh." : `You picked ${esc(picked)}.`;
-    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state." : `${tapped} The shaded one is ${esc(q.name)}.`);
+    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state: full points." : `${tapped} The shaded one is ${esc(q.name)}. ${scoreLine(err, sc, "Your tap was off by")}`);
   }
   function answerSpot(o, btn) {
     if (game.cur.done) return;
     const q = game.cur.q, ok = o?.id === q.id;
-    const pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
+    let err = 0;
+    if (o && !ok) {
+      if (q.isState) { const a = centroidLL(q.name), b = centroidLL(o.name); err = a && b ? haversine(a[0], a[1], b[0], b[1]) : 2000; }
+      else err = haversine(q.lat, q.lon, o.lat, o.lon);
+    }
+    const sc = o ? scoreFor(err) : { pts: 0, base: 0, f: 0 }, pts = sc.pts; game.cur.f = sc.f;
     document.querySelectorAll(".opt").forEach((b) => { b.disabled = true; if (b.dataset.id === q.id) b.classList.add("right"); });
     if (o && !ok) {
       btn.classList.add("wrongpick");
@@ -1075,10 +1106,10 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       else statePaths[o.name]?.classList.add("wrong");
     }
     if (!q.isState) label(q.x, q.y, q.name); else { const c = stateCentroid(q.name); label(c[0], c[1], q.name); }
-    record(q, ok, pts, null); sfx.land(ok ? 1 : 0);
+    record(q, ok, pts, o && !ok ? err : null); sfx.land(sc.f);
     if (!o) return feedback(["Time's up", "bad"], 0, `The answer is ${esc(q.name)}.`);
     const where = o.isState ? "" : (!ok ? ` ${esc(o.name)} is in ${esc(o.state)}.` : "");
-    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted." : `The answer is ${esc(q.name)}.${where}`);
+    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted: full points." : `The answer is ${esc(q.name)}.${where} ${scoreLine(err, sc, "Your choice is off by")}`);
   }
   function timeUp() {
     const c = game?.cur; if (!c || c.done || views.play.hidden) return;

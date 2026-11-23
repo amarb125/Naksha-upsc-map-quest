@@ -10,6 +10,10 @@ Every day at midnight IST there is a new set of five places, the same for everyo
 
 After you tap, a dashed flight path draws from your pin to the real place with a running km counter, then the answer marker pops in and your points count up. Sound effects are generated in the browser (no audio files); use the 🔊 button in the header to mute them.
 
+## Scoring
+
+Points depend on how far off you are. Each round is worth 1,000, and you lose **1 point for every km** of error (2 per km on Tough, so 500 km off scores 0). Within 5 km you get full points. For a wrong state, the error is measured from your tap to the nearest edge of the right state; in Spot it, a wrong choice is scored by its distance from the answer. In the Daily the five rounds are worth 100–300, and the loss per km scales the same way (0.1 points per km on a 100-point round). The result card shows the working, e.g. *Error: 242 km. At 1 point per km: 1,000 − 242 = 758.*
+
 ## How a practice round works
 
 The map fills the screen. A question card at the top shows the place and a countdown (30 s, 15 s or off). Drop a pin (or pick a state), adjust it if you like, then press **Confirm** (or Enter). The result sheet shows the line from your pin to the answer, the distance, a points bar and the key fact. After the last round a summary card shows your score, stars and a review of every place.

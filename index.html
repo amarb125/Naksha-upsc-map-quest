@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Naksha UPSC Map Quest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen atlas — the survey map fills the left, a field-notebook panel sits right (stacks under the map on phones). */
+:root {
+  --sea: #d6e4e8;
+  --sea-line: #b6cbd2;
+  --land: #eef0e2;
+  --land-hover: #dfe6c6;
+  --border: #8c9a83;
+  --ink: #1b2e35;
+  --muted: #5b6d72;
+  --paper: #f7f8f4;
+  --panel: #ffffff;
+  --line: #dde3df;
+  --accent: #1f5a6b;
+  --accent-ink: #ffffff;
+  --pin: #e0901a;
+  --good: #2e8a57;
+  --bad: #c2462e;
+  --target: #f2c66d;
+  --guide: #b0574a;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
+    --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
+    --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
+    --target: #8a6a26; --guide: #d98a7c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sea: #13232a; --sea-line: #20363f; --land: #2a3634; --land-hover: #37483f; --border: #6f8579;
+  --ink: #e6eeec; --muted: #9bb0b2; --paper: #0f1a1f; --panel: #17242a; --line: #2a3a40;
+  --accent: #6fb7c9; --accent-ink: #0d1c22; --pin: #f0a83a; --good: #5cc08a; --bad: #ef7b62;
+  --target: #8a6a26; --guide: #d98a7c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 15px/1.5 var(--f-body);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; background: none; border: 0; padding: 0; text-align: left; }
+.brand b { font: 800 22px/1 var(--f-display); letter-spacing: -0.02em; }
+.brand span { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.stats { display: flex; gap: 16px; font-variant-numeric: tabular-nums; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; }
+.stat small { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.stat b { font: 600 16px/1.1 var(--f-mono); }
+
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 380px; }
+.mapwrap { position: relative; min-height: 0; background: var(--sea); overflow: hidden; }
+#map { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+#map.crosshair { cursor: crosshair; }
+.state { fill: var(--land); stroke: var(--border); stroke-width: 0.7; vector-effect: non-scaling-stroke; stroke-linejoin: round; transition: fill .15s; }
+.statepick .state:hover { fill: var(--land-hover); }
+.state.target { fill: var(--target); }
+.state.wrong { fill: color-mix(in srgb, var(--bad) 35%, var(--land)); }
+.state.hint { stroke: var(--accent); stroke-width: 2; }
+.grid line { stroke: var(--sea-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.guide line { stroke: var(--guide); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.guide text, .sea-label { fill: var(--muted); font-family: var(--f-mono); }
+.guide text { fill: var(--guide); }
+.sea-label { letter-spacing: 0.3em; opacity: 0.8; }
+.dot { fill: var(--accent); stroke: var(--panel); vector-effect: non-scaling-stroke; stroke-width: 1.2; cursor: pointer; }
+.dot.on { fill: var(--pin); }
+.dot.quiet { cursor: default; opacity: 0.55; }
+.m-guess { fill: var(--pin); stroke: var(--ink); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.m-answer { fill: var(--good); stroke: var(--panel); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.m-ring { fill: none; stroke: var(--good); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.m-quiz { fill: var(--pin); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.m-line { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.m-label { fill: var(--ink); paint-order: stroke; stroke: var(--land); stroke-width: 3; stroke-linejoin: round; font-family: var(--f-body); font-weight: 600; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .pulse { animation: pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes pulse { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
+}
+
+.mapctl { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.mapctl button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font: 600 18px/1 var(--f-mono); }
+.coords { position: absolute; left: 12px; bottom: 10px; font: 500 12px/1 var(--f-mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 6px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.maptip { position: absolute; left: 12px; top: 12px; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 6px 10px; border-radius: 6px; max-width: calc(100% - 80px); pointer-events: none; }
+.guidetoggle { position: absolute; right: 12px; bottom: 10px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 4px 8px; border-radius: 6px; }
+
+.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0; }
+.view { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+h1 { font: 800 28px/1.1 var(--f-display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 12px/1 var(--f-body); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 8px; }
+p { margin: 0; }
+.lead { color: var(--muted); }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; padding: 8px 6px; border-radius: 7px; font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.modehelp { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+.topics { display: flex; flex-direction: column; gap: 4px; }
+.topic { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; background: none; text-align: left; width: 100%; }
+.topic:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.topic[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.topic .ic { font-size: 18px; text-align: center; }
+.topic .nm { font-weight: 500; min-width: 0; }
+.topic .meta { font: 500 12px/1.2 var(--f-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.topic[disabled] { opacity: .45; cursor: default; }
+
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.chips { display: flex; gap: 6px; }
+.chip { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 4px 12px; font: 500 13px/1.4 var(--f-mono); }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.btn { border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: none; color: var(--accent); border: 1px solid var(--line); }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.prompt .eyebrow { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.prompt .q { font: 800 26px/1.15 var(--f-display); letter-spacing: -0.01em; margin-top: 4px; text-wrap: balance; }
+.prompt .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.options { display: grid; gap: 8px; }
+.opt { text-align: left; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: none; display: flex; gap: 10px; align-items: baseline; }
+.opt kbd { font: 500 12px/1 var(--f-mono); color: var(--muted); }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+.opt.wrongpick { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.opt:disabled { cursor: default; }
+.hintrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.feedback { border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.verdict { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.verdict b { font: 800 22px/1 var(--f-display); }
+.verdict b.good { color: var(--good); } .verdict b.mid { color: var(--pin); } .verdict b.bad { color: var(--bad); }
+.verdict span { font: 600 15px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.factcard { background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.factcard .where { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.factcard .ttl { font-weight: 600; }
+.progress { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+
+.bigscore { font: 800 54px/1 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.summary div { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.summary small { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.summary b { font: 600 18px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; }
+.review { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.review li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.review li button { all: unset; cursor: pointer; font-weight: 500; }
+.review li button:focus-visible { outline: 2px solid var(--accent); }
+.review .ok { color: var(--good); } .review .no { color: var(--bad); }
+.review .d { font: 500 12px/1 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.search { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); }
+.plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.plist button { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 9px 4px; display: flex; justify-content: space-between; gap: 10px; }
+.plist button:hover, .plist button.on { color: var(--accent); }
+.plist small { color: var(--muted); font-size: 12px; text-align: right; flex-shrink: 0; max-width: 45%; }
+select.search { appearance: auto; }
+.credit { font-size: 11px; color: var(--muted); }
+.credit a { color: inherit; }
+
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+  .mapwrap { height: 58vh; min-height: 320px; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 28px; }
+  .stats { gap: 12px; }
+  h1 { font-size: 24px; }
+  .prompt .q { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><b>Naksha</b><span>UPSC Map Quest</span></button>
+  <div class="stats" id="stats" hidden>
+    <div class="stat"><small>Round</small><b id="sRound">1/10</b></div>
+    <div class="stat"><small>Score</small><b id="sScore">0</b></div>
+    <div class="stat"><small>Streak</small><b id="sStreak">0</b></div>
+  </div>
+</header>
+
+<main class="app">
+  <section class="mapwrap" aria-label="Map of India">
+    <svg id="map" viewBox="0 0 550 628" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outline map of India with state boundaries">
+      <rect x="-2000" y="-2000" width="5000" height="5000" fill="var(--sea)"></rect>
+      <g class="grid" id="grid"></g>
+      <g id="seaLabels"></g>
+      <g id="states"></g>
+      <g class="guide" id="guide"></g>
+      <g id="dots"></g>
+      <g id="marks"></g>
+    </svg>
+    <div class="maptip" id="maptip" hidden></div>
+    <div class="mapctl">
+      <button type="button" id="zin" aria-label="Zoom in">+</button>
+      <button type="button" id="zout" aria-label="Zoom out">−</button>
+      <button type="button" id="zreset" aria-label="Show all of India">⤢</button>
+    </div>
+    <div class="coords" id="coords">23.44°N · 82.50°E</div>
+    <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Tropic &amp; 82.5°E</label>
+  </section>
+
+  <aside class="panel">
+    <!-- HOME -->
+    <div class="view" id="vHome">
+      <div>
+        <h1>Find it on India's map before the exam asks.</h1>
+        <p class="lead" style="margin-top:8px">Prelims map questions, played as a game: national parks, passes, Ramsar sites, dams, Harappan sites, ports and more. Every answer comes with the fact UPSC asks about.</p>
+      </div>
+      <div>
+        <h2>Mode</h2>
+        <div class="seg" role="group" aria-label="Game mode">
+          <button type="button" data-mode="pin" aria-pressed="true">Pin it</button>
+          <button type="button" data-mode="spot" aria-pressed="false">Spot it</button>
+          <button type="button" data-mode="learn" aria-pressed="false">Revise</button>
+        </div>
+        <p class="modehelp" id="modeHelp"></p>
+      </div>
+      <div>
+        <h2>Topic</h2>
+        <div class="topics" id="topics"></div>
+      </div>
+      <div class="row" id="roundsRow">
+        <h2 style="margin:0">Rounds</h2>
+        <div class="chips" role="group" aria-label="Number of rounds">
+          <button type="button" class="chip" data-n="10" aria-pressed="true">10</button>
+          <button type="button" class="chip" data-n="20" aria-pressed="false">20</button>
+          <button type="button" class="chip" data-n="30" aria-pressed="false">30</button>
+        </div>
+      </div>
+      <button type="button" class="btn wide" id="startBtn">Start</button>
+      <p class="credit">Map: state boundaries from <a href="https://github.com/datameet/maps" target="_blank" rel="noopener">DataMeet India community</a> (CC BY 4.0), drawn as per the Survey of India outline. Locations are approximate.</p>
+    </div>
+
+    <!-- PLAY -->
+    <div class="view" id="vPlay" hidden>
+      <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
+      <div class="prompt">
+        <div class="eyebrow" id="pEyebrow"></div>
+        <div class="q" id="pQ"></div>
+        <div class="sub" id="pSub"></div>
+      </div>
+      <div class="options" id="options" hidden></div>
+      <div class="hintrow" id="hintRow">
+        <span id="hintText">Tap the map where you think it is. Pinch or scroll to zoom.</span>
+        <button type="button" class="linkbtn" id="hintBtn">Show state (½ points)</button>
+      </div>
+      <div class="feedback" id="feedback" hidden>
+        <div class="verdict"><b id="fVerdict"></b><span id="fPoints"></span></div>
+        <div id="fDetail" class="lead"></div>
+        <div class="factcard">
+          <div class="where" id="fWhere"></div>
+          <div class="ttl" id="fTitle"></div>
+          <p id="fFact"></p>
+        </div>
+        <button type="button" class="btn wide" id="nextBtn">Next</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="view" id="vResult" hidden>
+      <div>
+        <h2 id="rTopic"></h2>
+        <div class="bigscore" id="rScore">0</div>
+        <p class="lead" id="rNote"></p>
+      </div>
+      <div class="summary">
+        <div><small>Correct</small><b id="rCorrect"></b></div>
+        <div><small>Avg. miss</small><b id="rAvg"></b></div>
+        <div><small>Best</small><b id="rBest"></b></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="againBtn">Play again</button>
+        <button type="button" class="btn ghost" id="missBtn">Practise misses</button>
+        <button type="button" class="btn ghost" id="changeBtn">Change topic</button>
+      </div>
+      <div>
+        <h2>Review — tap a place to see it</h2>
+        <ul class="review" id="review"></ul>
+      </div>
+    </div>
+
+    <!-- LEARN -->
+    <div class="view" id="vLearn" hidden>
+      <div>
+        <h1 style="font-size:24px">Revise the map</h1>
+        <p class="lead" style="margin-top:6px">Every place in the topic is marked. Tap a dot or a name to read its UPSC fact.</p>
+      </div>
+      <select class="search" id="learnTopic" aria-label="Topic"></select>
+      <input class="search" id="learnSearch" type="search" placeholder="Search places or states" aria-label="Search places">
+      <div class="factcard" id="learnCard" hidden>
+        <div class="where" id="lWhere"></div>
+        <div class="ttl" id="lTitle"></div>
+        <p id="lFact"></p>
+      </div>
+      <ul class="plist" id="plist"></ul>
+    </div>
+  </aside>
+</main>
+
+<script src="map-data.js"></script>
+<script src="places.js"></script>
+<script>
+(() => {
+  "use strict";
+  // ---------- projection (must match map-data.js) ----------
+  const W = 550, H = 628, K = 20, C = Math.cos(22 * Math.PI / 180), LON0 = 68, LAT0 = 37.6;
+  const proj = (lat, lon) => [(lon - LON0) * K * C, (LAT0 - lat) * K];
+  const unproj = (x, y) => [LAT0 - y / K, x / (K * C) + LON0];
+  const haversine = (a, b, c, d) => {
+    const r = Math.PI / 180, dl = (c - a) * r, dn = (d - b) * r;
+    const h = Math.sin(dl / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dn / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(h));
+  };
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const svgEl = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"} · ${lon.toFixed(2)}°E`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- storage (best scores + weak spots), always optional ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("naksha." + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("naksha." + k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+  };
+  let stats = store.get("stats", {});   // id -> {s: seen, m: misses outstanding}
+  let best = store.get("best", {});     // mode:topic -> score per round (avg)
+
+  // ---------- data ----------
+  const STATE_ALIAS = { "Ladakh": "Jammu & Kashmir and Ladakh", "Jammu & Kashmir": "Jammu & Kashmir and Ladakh" };
+  const ITEMS = [];
+  const TOPICS = [];
+  for (const c of window.CATEGORIES) {
+    const list = c.places.map(([name, lat, lon, state, fact]) => {
+      const [x, y] = proj(lat, lon);
+      const it = { id: c.id + ":" + name, name, lat, lon, x, y, state, fact, cat: c.id, catTitle: c.title };
+      ITEMS.push(it); return it;
+    });
+    TOPICS.push({ id: c.id, title: c.title, icon: c.icon, items: list });
+  }
+  const stateItems = window.STATES.map(([name, capital, fact]) => ({ id: "states:" + name, name, capital, fact, state: name, cat: "states", catTitle: "States & UTs", isState: true }));
+  ITEMS.push(...stateItems);
+  const byId = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
+  TOPICS.unshift({ id: "states", title: "States & UTs", icon: "🗺️", items: stateItems });
+  TOPICS.unshift({ id: "mix", title: "Mixed: all topics", icon: "🎯", get items() { return ITEMS.filter((i) => !i.isState); } });
+  TOPICS.push({ id: "weak", title: "My weak spots", icon: "📌", get items() {
+    return Object.entries(stats).filter(([id, v]) => v.m > 0 && byId[id]).sort((a, b) => b[1].m - a[1].m).map(([id]) => byId[id]);
+  } });
+  const topicById = (id) => TOPICS.find((t) => t.id === id);
+
+  // ---------- map drawing ----------
+  const svg = $("map");
+  const gStates = $("states"), gDots = $("dots"), gMarks = $("marks");
+  const statePaths = {};
+  for (const [name, d] of Object.entries(window.INDIA_MAP)) {
+    const p = svgEl("path", { d, class: "state", "data-state": name }, gStates);
+    statePaths[name] = p;
+  }
+  // graticule every 5°
+  const gGrid = $("grid");
+  for (let lon = 70; lon <= 95; lon += 5) { const [x] = proj(0, lon); svgEl("line", { x1: x, y1: -2000, x2: x, y2: H + 2000 }, gGrid); }
+  for (let lat = 10; lat <= 35; lat += 5) { const [, y] = proj(lat, 0); svgEl("line", { x1: -2000, y1: y, x2: W + 2000, y2: y }, gGrid); }
+  // guide lines that UPSC loves: Tropic of Cancer and the Standard Meridian
+  const gGuide = $("guide");
+  { const [, y] = proj(23.44, 0); svgEl("line", { x1: -2000, y1: y, x2: W + 2000, y2: y }, gGuide);
+    const t = svgEl("text", { x: 6, y: y - 4, "data-fs": 9 }, gGuide); t.textContent = "TROPIC OF CANCER 23°26′N";
+    const [x] = proj(0, 82.5); svgEl("line", { x1: x, y1: -2000, x2: x, y2: H + 2000 }, gGuide);
+    const t2 = svgEl("text", { x: x + 4, y: H - 8, "data-fs": 9 }, gGuide); t2.textContent = "82°30′E IST"; }
+  const gSea = $("seaLabels");
+  for (const [txt, lat, lon] of [["ARABIAN SEA", 15.5, 69.2], ["BAY OF BENGAL", 15.5, 85.6], ["INDIAN OCEAN", 7.2, 78.5]]) {
+    const [x, y] = proj(lat, lon); const t = svgEl("text", { x, y, class: "sea-label", "data-fs": 10 }, gSea); t.textContent = txt;
+  }
+  $("guideToggle").addEventListener("change", (e) => { gGuide.style.display = e.target.checked ? "" : "none"; });
+
+  // ---------- pan & zoom ----------
+  let vb = { x: 0, y: 0, w: W, h: H };
+  const ppu = () => { const r = svg.getBoundingClientRect(); return Math.min(r.width / vb.w, r.height / vb.h) || 1; };
+  const toMap = (cx, cy) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 }; };
+  function clampVb() {
+    vb.w = Math.min(Math.max(vb.w, 24), W * 1.4); vb.h = vb.w * H / W;
+    vb.x = Math.min(Math.max(vb.x, -vb.w / 2), W - vb.w / 2);
+    vb.y = Math.min(Math.max(vb.y, -vb.h / 2), H - vb.h / 2);
+  }
+  function applyView() {
+    clampVb();
+    svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    const u = 1 / ppu(); // map units per screen pixel
+    svg.querySelectorAll("[data-r]").forEach((e) => e.setAttribute("r", e.dataset.r * u));
+    svg.querySelectorAll("[data-fs]").forEach((e) => e.setAttribute("font-size", e.dataset.fs * u * 1.15));
+    svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
+  }
+  function zoomAt(f, cx, cy) {
+    const p = toMap(cx, cy); const nw = Math.min(Math.max(vb.w * f, 24), W * 1.4); const k = nw / vb.w;
+    vb.x = p.x - (p.x - vb.x) * k; vb.y = p.y - (p.y - vb.y) * k; vb.w = nw; vb.h = nw * H / W; applyView();
+  }
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let anim = 0;
+  function flyTo(x, y, w) {
+    cancelAnimationFrame(anim);
+    const to = { w, h: w * H / W }; to.x = x - to.w / 2; to.y = y - to.h / 2;
+    if (reduceMotion) { vb = to; applyView(); return; }
+    const from = { ...vb }, t0 = performance.now(), dur = 550;
+    const step = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      for (const key of ["x", "y", "w", "h"]) vb[key] = from[key] + (to[key] - from[key]) * e;
+      applyView(); if (k < 1) anim = requestAnimationFrame(step); };
+    anim = requestAnimationFrame(step);
+  }
+  const resetView = () => flyTo(W / 2, H / 2, W);
+  function fitPoints(pts) {
+    if (!pts.length) return resetView();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const r = svg.getBoundingClientRect(); const aspect = r.width / r.height || 1;
+    let w = Math.max(x1 - x0, (y1 - y0) * W / H, 70) * 1.5;
+    if (aspect < W / H) w = Math.max(w, (y1 - y0) * 1.5 * W / H);
+    flyTo((x0 + x1) / 2, (y0 + y1) / 2, Math.min(w, W));
+  }
+  $("zin").onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(0.6, r.left + r.width / 2, r.top + r.height / 2); };
+  $("zout").onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1.6, r.left + r.width / 2, r.top + r.height / 2); };
+  $("zreset").onclick = resetView;
+  svg.addEventListener("wheel", (e) => { e.preventDefault(); zoomAt(Math.exp(e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), e.clientX, e.clientY); }, { passive: false });
+
+  const pointers = new Map();
+  let down = null, pinch = null, moved = false;
+  svg.addEventListener("pointerdown", (e) => {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) { down = { x: e.clientX, y: e.clientY, target: e.target }; moved = false; }
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) }; moved = true; }
+  });
+  svg.addEventListener("pointermove", (e) => {
+    const m = toMap(e.clientX, e.clientY); const [lat, lon] = unproj(m.x, m.y);
+    $("coords").textContent = fmtCoord(lat, lon);
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2 && pinch) {
+      const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d > 0) zoomAt(pinch.d / d, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch.d = d; return;
+    }
+    if (pointers.size === 1 && down) {
+      if (!moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) return;
+      moved = true; const u = 1 / ppu();
+      vb.x -= (e.clientX - prev.x) * u; vb.y -= (e.clientY - prev.y) * u; applyView();
+    }
+  });
+  const endPointer = (e) => {
+    const wasTap = pointers.size === 1 && down && !moved && e.type === "pointerup";
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (wasTap) { const m = toMap(e.clientX, e.clientY); onMapTap(m.x, m.y, down.target); }
+    if (pointers.size === 0) down = null;
+  };
+  svg.addEventListener("pointerup", endPointer);
+  svg.addEventListener("pointercancel", endPointer);
+  svg.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { pointers.delete(e.pointerId); down = null; } });
+  addEventListener("resize", applyView);
+
+  // ---------- markers ----------
+  function clearMarks() { gMarks.replaceChildren(); }
+  function clearStateClasses() { for (const p of Object.values(statePaths)) p.classList.remove("target", "wrong", "hint"); }
+  function circle(x, y, r, cls, parent = gMarks) { return svgEl("circle", { cx: x, cy: y, "data-r": r, r, class: cls }, parent); }
+  function label(x, y, text, parent = gMarks) {
+    const t = svgEl("text", { "data-ax": x, "data-ay": y, "data-dx": 10, "data-dy": 4, "data-fs": 12, x, y, class: "m-label" }, parent);
+    t.textContent = text; return t;
+  }
+  function stateCentroid(name) {
+    const p = statePaths[name]; if (!p) return null; const b = p.getBBox();
+    return [b.x + b.width / 2, b.y + b.height / 2, Math.max(b.width, b.height * W / H)];
+  }
+
+  // ---------- views ----------
+  const views = { home: $("vHome"), play: $("vPlay"), result: $("vResult"), learn: $("vLearn") };
+  function show(v) { for (const k in views) views[k].hidden = k !== v; $("stats").hidden = v !== "play"; document.querySelector(".panel").scrollTop = 0; }
+
+  let mode = "pin", topicId = "mix", rounds = 10;
+  const MODE_HELP = {
+    pin: "A place is named. Tap where it is on the map. Closer taps score more (up to 1,000).",
+    spot: "A place is marked on the map. Pick its name from four options.",
+    learn: "No score. See every place in a topic on the map with its fact, for quick revision.",
+  };
+  function renderHome() {
+    document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+    $("modeHelp").textContent = MODE_HELP[mode];
+    $("roundsRow").hidden = mode === "learn";
+    $("startBtn").textContent = mode === "learn" ? "Open revision map" : "Start";
+    const box = $("topics"); box.replaceChildren();
+    for (const t of TOPICS) {
+      const n = t.items.length; const b = document.createElement("button");
+      b.type = "button"; b.className = "topic"; b.setAttribute("aria-pressed", t.id === topicId);
+      const bs = best[mode + ":" + t.id];
+      const meta = t.id === "weak" ? (n ? `${n} to fix` : "none yet") : `${n} places${bs ? ` · best ${bs}` : ""}`;
+      b.innerHTML = `<span class="ic" aria-hidden="true">${t.icon}</span><span class="nm">${esc(t.title)}</span><span class="meta">${meta}</span>`;
+      if (!n) b.disabled = true;
+      b.onclick = () => { topicId = t.id; renderHome(); previewTopic(); };
+      box.appendChild(b);
+    }
+  }
+  function previewTopic() {
+    gDots.replaceChildren(); clearMarks(); clearStateClasses();
+    const t = topicById(topicId); if (!t) return;
+    const pts = t.items.filter((i) => !i.isState);
+    for (const i of pts) circle(i.x, i.y, 3.2, "dot quiet", gDots);
+    applyView();
+  }
+  document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => { mode = b.dataset.mode; renderHome(); });
+  document.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => {
+    rounds = +b.dataset.n; document.querySelectorAll("[data-n]").forEach((c) => c.setAttribute("aria-pressed", c === b));
+  });
+  $("startBtn").onclick = () => mode === "learn" ? openLearn(topicId) : startGame(topicById(topicId).items);
+  $("homeBtn").onclick = goHome;
+  function goHome() { svg.classList.remove("crosshair", "statepick"); $("maptip").hidden = true; show("home"); renderHome(); previewTopic(); resetView(); }
+
+  // ---------- game ----------
+  let game = null;
+  function startGame(pool, label) {
+    pool = pool.filter(Boolean);
+    if (!pool.length) return;
+    const qs = shuffle(pool).slice(0, Math.min(rounds, pool.length));
+    game = { qs, i: 0, score: 0, streak: 0, results: [], topicLabel: label || topicById(topicId).title, pool };
+    gDots.replaceChildren();
+    show("play"); ask();
+  }
+  function updateStats() {
+    $("sRound").textContent = `${Math.min(game.i + 1, game.qs.length)}/${game.qs.length}`;
+    $("sScore").textContent = game.score.toLocaleString("en-IN");
+    $("sStreak").textContent = game.streak;
+    $("prog").style.width = (game.i / game.qs.length * 100) + "%";
+  }
+  function ask() {
+    const q = game.qs[game.i]; game.cur = { q, hint: false, done: false };
+    clearMarks(); clearStateClasses(); updateStats();
+    if (matchMedia("(max-width: 860px)").matches) window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true;
+    $("pEyebrow").textContent = q.catTitle;
+    $("hintBtn").hidden = false;
+    svg.classList.toggle("statepick", mode === "pin" && !!q.isState);
+    svg.classList.toggle("crosshair", mode === "pin" && !q.isState);
+    if (mode === "pin") {
+      $("pQ").textContent = q.name;
+      $("pSub").textContent = q.isState ? "Tap this state or UT on the map." : "Where is it? Tap the map.";
+      $("hintText").textContent = q.isState ? "Small UTs: zoom in first." : "Pinch or scroll to zoom for precision.";
+      $("hintBtn").textContent = q.isState ? "Show capital (½ points)" : "Show state (½ points)";
+      $("maptip").hidden = false; $("maptip").textContent = q.isState ? `Tap: ${q.name}` : `Pin: ${q.name}`;
+      resetView();
+    } else {
+      $("maptip").hidden = true;
+      $("pQ").textContent = q.isState ? "Which state or UT is shaded?" : "Which place is marked?";
+      $("pSub").textContent = q.isState ? "" : "Zoom in to see its surroundings.";
+      $("hintText").textContent = "Keys 1–4 also work.";
+      $("hintBtn").textContent = q.isState ? "Show capital (½ points)" : "Show state (½ points)";
+      if (q.isState) {
+        statePaths[q.name]?.classList.add("target");
+        const c = stateCentroid(q.name); if (c) flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 4, 120)));
+      } else {
+        circle(q.x, q.y, 7, "m-quiz pulse"); circle(q.x, q.y, 6, "m-quiz");
+        flyTo(q.x, q.y, 260);
+      }
+      renderOptions(q);
+    }
+    applyView();
+  }
+  function renderOptions(q) {
+    const same = (q.isState ? stateItems : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
+    let pool = same.filter((i) => i.id !== q.id && (q.isState || haversine(q.lat, q.lon, i.lat, i.lon) > 120));
+    if (pool.length < 3) pool = (q.isState ? stateItems : ITEMS.filter((i) => !i.isState)).filter((i) => i.id !== q.id);
+    const opts = shuffle([q, ...shuffle(pool).slice(0, 3)]);
+    const box = $("options"); box.replaceChildren(); box.hidden = false;
+    opts.forEach((o, k) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.id = o.id;
+      b.innerHTML = `<kbd>${k + 1}</kbd><span>${esc(o.name)}</span>`;
+      b.onclick = () => answerSpot(o, b); box.appendChild(b);
+    });
+  }
+  $("hintBtn").onclick = () => {
+    const c = game?.cur; if (!c || c.done || c.hint) return;
+    c.hint = true; $("hintBtn").hidden = true;
+    const q = c.q;
+    if (q.isState) { $("hintText").textContent = `Capital: ${q.capital}`; return; }
+    $("hintText").textContent = `It is in ${q.state}.`;
+    const sp = statePaths[STATE_ALIAS[q.state] || q.state];
+    if (sp) { sp.classList.add("hint"); if (mode === "pin") { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, 90))); } }
+  };
+
+  function onMapTap(x, y, target) {
+    if (views.learn.hidden === false) return learnTap(target);
+    if (!game || views.play.hidden || game.cur.done || mode !== "pin") return;
+    const q = game.cur.q;
+    if (q.isState) {
+      let picked = target?.closest?.("[data-state]")?.dataset.state || null;
+      if (picked !== q.name) {
+        const tp = statePaths[q.name]; const b = tp.getBBox();
+        const near = (b.width * b.height < 60) && x > b.x - 8 && x < b.x + b.width + 8 && y > b.y - 8 && y < b.y + b.height + 8;
+        if (near) picked = q.name;
+      }
+      finishState(q, picked); return;
+    }
+    const [glat, glon] = unproj(x, y);
+    const d = haversine(glat, glon, q.lat, q.lon);
+    let pts = d <= 15 ? 1000 : Math.round(1000 * Math.exp(-(d - 15) / 150));
+    if (game.cur.hint) pts = Math.round(pts / 2);
+    clearMarks();
+    svgEl("line", { x1: x, y1: y, x2: q.x, y2: q.y, class: "m-line" }, gMarks);
+    circle(x, y, 6, "m-guess");
+    circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer");
+    label(q.x, q.y, q.name);
+    const dx = Math.abs(x - q.x), dy = Math.abs(y - q.y);
+    flyTo((x + q.x) / 2, (y + q.y) / 2, Math.min(W, Math.max(dx * 1.8, dy * 1.8 * W / H, 110)));
+    const verdict = d < 25 ? ["Bullseye", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
+    const ok = d < 150;
+    record(q, ok, pts, d);
+    feedback(verdict, pts, `Your pin was <b>${Math.round(d).toLocaleString("en-IN")} km</b> away.`);
+  }
+  function finishState(q, picked) {
+    const ok = picked === q.name;
+    let pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
+    clearStateClasses();
+    statePaths[q.name].classList.add("target");
+    if (!ok && picked && statePaths[picked]) statePaths[picked].classList.add("wrong");
+    const c = stateCentroid(q.name); label(c[0], c[1], q.name);
+    if (!ok) flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 3, 160)));
+    record(q, ok, pts, null);
+    const tapped = !picked ? "You tapped the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You tapped Jammu & Kashmir / Ladakh." : `You tapped ${esc(picked)}.`;
+    feedback(ok ? ["Correct", "good"] : ["Not quite", "bad"], pts, ok ? "Right state." : `${tapped} The shaded one is ${esc(q.name)}.`);
+  }
+  function answerSpot(o, btn) {
+    if (game.cur.done) return;
+    const q = game.cur.q, ok = o.id === q.id;
+    const pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
+    document.querySelectorAll(".opt").forEach((b) => { b.disabled = true; if (b.dataset.id === q.id) b.classList.add("right"); });
+    if (!ok) {
+      btn.classList.add("wrongpick");
+      if (!o.isState) { circle(o.x, o.y, 5, "m-guess"); label(o.x, o.y, o.name); }
+      else statePaths[o.name]?.classList.add("wrong");
+    }
+    if (!q.isState) label(q.x, q.y, q.name); else { const c = stateCentroid(q.name); label(c[0], c[1], q.name); }
+    record(q, ok, pts, null);
+    const where = o.isState ? "" : (!ok ? ` ${esc(o.name)} is in ${esc(o.state)}.` : "");
+    feedback(ok ? ["Correct", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted." : `The answer is ${esc(q.name)}.${where}`);
+  }
+  function record(q, ok, pts, d) {
+    game.cur.done = true;
+    game.score += pts; game.streak = ok ? game.streak + 1 : 0;
+    game.results.push({ q, ok, pts, d });
+    const s = stats[q.id] || { s: 0, m: 0 }; s.s++;
+    s.m = ok ? Math.max(0, s.m - 1) : s.m + 1; stats[q.id] = s; store.set("stats", stats);
+    svg.classList.remove("crosshair", "statepick"); $("maptip").hidden = true;
+  }
+  function feedback([v, cls], pts, detail) {
+    const q = game.cur.q;
+    $("hintRow").hidden = true; $("feedback").hidden = false;
+    $("fVerdict").textContent = v; $("fVerdict").className = cls;
+    $("fPoints").textContent = `+${pts}`;
+    $("fDetail").innerHTML = detail;
+    $("fWhere").textContent = q.isState ? `Capital: ${q.capital}` : q.state;
+    $("fTitle").textContent = q.name;
+    $("fFact").textContent = q.fact;
+    $("nextBtn").textContent = game.i + 1 >= game.qs.length ? "See results" : "Next";
+    updateStats(); applyView();
+    $("nextBtn").focus({ preventScroll: true });
+    if (matchMedia("(max-width: 860px)").matches) $("feedback").scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  $("nextBtn").onclick = () => { game.i++; if (game.i >= game.qs.length) finish(); else ask(); };
+  addEventListener("keydown", (e) => {
+    if (views.play.hidden || !game) return;
+    if (e.target.tagName === "INPUT") return;
+    if (game.cur.done && (e.key === "Enter" || e.key === " ") && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click(); }
+    if (!game.cur.done && mode === "spot" && /^[1-4]$/.test(e.key)) document.querySelectorAll(".opt")[+e.key - 1]?.click();
+  });
+
+  function finish() {
+    clearMarks(); clearStateClasses();
+    const r = game.results, n = r.length, correct = r.filter((x) => x.ok).length;
+    const key = mode + ":" + topicId;
+    const prevBest = best[key] || 0;
+    const isTopicRun = !game.custom;
+    if (isTopicRun && game.score > prevBest && n >= 10) { best[key] = game.score; store.set("best", best); }
+    const ds = r.filter((x) => x.d != null).map((x) => x.d);
+    $("rTopic").textContent = `${game.topicLabel} · ${mode === "pin" ? "Pin it" : "Spot it"}`;
+    $("rScore").textContent = game.score.toLocaleString("en-IN");
+    $("rNote").textContent = `out of ${(n * 1000).toLocaleString("en-IN")}` + (isTopicRun && game.score > prevBest && prevBest && n >= 10 ? " — a new best." : ".");
+    $("rCorrect").textContent = `${correct}/${n}`;
+    $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
+    $("rBest").textContent = best[key] ? best[key].toLocaleString("en-IN") : "—";
+    $("missBtn").disabled = correct === n;
+    const ul = $("review"); ul.replaceChildren();
+    r.forEach((x) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="${x.ok ? "ok" : "no"}" aria-label="${x.ok ? "correct" : "missed"}">${x.ok ? "✓" : "✗"}</span><button type="button">${esc(x.q.name)}</button><span class="d">${x.d != null ? Math.round(x.d) + " km" : x.ok ? "+" + x.pts : "0"}</span>`;
+      li.querySelector("button").onclick = () => showOnMap(x.q);
+      ul.appendChild(li);
+    });
+    // show the misses on the map
+    for (const x of r) if (!x.ok) {
+      if (x.q.isState) statePaths[x.q.name]?.classList.add("wrong");
+      else { circle(x.q.x, x.q.y, 5, "m-guess"); }
+    }
+    show("result"); resetView(); applyView();
+  }
+  function showOnMap(q) {
+    clearMarks(); clearStateClasses();
+    if (q.isState) { statePaths[q.name]?.classList.add("target"); const c = stateCentroid(q.name); label(c[0], c[1], q.name); flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 3, 140))); }
+    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyTo(q.x, q.y, 200); }
+    applyView();
+  }
+  $("againBtn").onclick = () => { const g = game; startGame(g.custom ? g.pool : topicById(topicId).items, g.topicLabel); if (g.custom) game.custom = true; };
+  $("missBtn").onclick = () => { const miss = game.results.filter((x) => !x.ok).map((x) => x.q); const lbl = game.topicLabel; startGame(miss, lbl + " · misses"); game.custom = true; };
+  $("changeBtn").onclick = goHome;
+
+  // ---------- revise / learn ----------
+  let learnId = "mix";
+  function openLearn(id) {
+    learnId = id === "weak" && !topicById("weak").items.length ? "mix" : id;
+    const sel = $("learnTopic"); sel.replaceChildren();
+    for (const t of TOPICS) { if (!t.items.length) continue; const o = document.createElement("option"); o.value = t.id; o.textContent = `${t.title} (${t.items.length})`; sel.appendChild(o); }
+    sel.value = learnId; $("learnSearch").value = ""; $("learnCard").hidden = true;
+    show("learn"); renderLearn(); resetView();
+  }
+  $("learnTopic").onchange = (e) => { learnId = e.target.value; $("learnCard").hidden = true; renderLearn(); };
+  $("learnSearch").oninput = renderLearn;
+  function renderLearn() {
+    const t = topicById(learnId); const qstr = $("learnSearch").value.trim().toLowerCase();
+    const items = t.items.filter((i) => !qstr || (i.name + " " + i.state + " " + i.fact).toLowerCase().includes(qstr))
+      .slice().sort((a, b) => a.name.localeCompare(b.name));
+    gDots.replaceChildren(); clearMarks(); clearStateClasses();
+    svg.classList.toggle("statepick", learnId === "states");
+    for (const i of items) if (!i.isState) { const c = circle(i.x, i.y, 4, "dot", gDots); c.dataset.id = i.id; }
+    const ul = $("plist"); ul.replaceChildren();
+    for (const i of items) {
+      const li = document.createElement("li"); const b = document.createElement("button"); b.type = "button"; b.dataset.id = i.id;
+      b.innerHTML = `<span>${esc(i.name)}</span><small>${esc(i.isState ? i.capital : i.state)}</small>`;
+      b.onclick = () => learnPick(i); li.appendChild(b); ul.appendChild(li);
+    }
+    applyView();
+  }
+  function learnPick(i) {
+    document.querySelectorAll(".plist button").forEach((b) => b.classList.toggle("on", b.dataset.id === i.id));
+    gDots.querySelectorAll(".dot").forEach((d) => d.classList.toggle("on", d.dataset.id === i.id));
+    $("learnCard").hidden = false;
+    $("lWhere").textContent = i.isState ? `Capital: ${i.capital}` : `${i.state} · ${fmtCoord(i.lat, i.lon)}`;
+    $("lTitle").textContent = i.name; $("lFact").textContent = i.fact;
+    showOnMap(i);
+    if (matchMedia("(max-width: 860px)").matches) document.querySelector(".mapwrap").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  function learnTap(target) {
+    const id = target?.dataset?.id; if (id && byId[id]) return learnPick(byId[id]);
+    const st = target?.closest?.("[data-state]")?.dataset.state;
+    if (st) { const it = byId["states:" + st]; if (it) learnPick(it);
+      else { $("learnCard").hidden = false; $("lWhere").textContent = "Union Territories"; $("lTitle").textContent = "Jammu & Kashmir and Ladakh";
+        $("lFact").textContent = "Two UTs since 31 October 2019 (J&K Reorganisation Act). This map shows them together, including PoK, Gilgit-Baltistan and Aksai Chin as per India's official map."; } }
+  }
+
+  // ---------- boot ----------
+  renderHome(); previewTopic(); applyView();
+  requestAnimationFrame(applyView);
+})();
+</script>
+</body>
+</html>

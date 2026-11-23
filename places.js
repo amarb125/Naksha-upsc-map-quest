@@ -1,4 +1,4 @@
-// UPSC map question bank. Each place: [name, lat, lon, state, fact].
+// Map question bank. Each place: [name, lat, lon, state, fact].
 // Coordinates are approximate (good to a few km), which is enough for a map game.
 window.CATEGORIES = [
   {

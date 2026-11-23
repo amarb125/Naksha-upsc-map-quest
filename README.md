@@ -12,7 +12,7 @@ After you tap, a dashed flight path draws from your pin to the real place with a
 
 ## How a practice round works
 
-The map fills the screen. A question card at the top shows the place and a countdown (30 s, 15 s or off). Drop a pin (or pick a state), adjust it if you like, then press **Confirm** (or Enter). The result sheet shows the line from your pin to the answer, the distance, a points bar and the UPSC fact. After the last round a summary card shows your score, stars and a review of every place.
+The map fills the screen. A question card at the top shows the place and a countdown (30 s, 15 s or off). Drop a pin (or pick a state), adjust it if you like, then press **Confirm** (or Enter). The result sheet shows the line from your pin to the answer, the distance, a points bar and the key fact. After the last round a summary card shows your score, stars and a review of every place.
 
 ## Modes
 

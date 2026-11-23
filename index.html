@@ -167,7 +167,7 @@ p { margin: 0; }
 .summary small { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 .summary b { font: 600 18px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; }
 .review { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.review li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.review li { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
 .review li button { all: unset; cursor: pointer; font-weight: 500; }
 .review li button:focus-visible { outline: 2px solid var(--accent); }
 .review .ok { color: var(--good); } .review .no { color: var(--bad); }
@@ -181,6 +181,24 @@ p { margin: 0; }
 select.search { appearance: auto; }
 .credit { font-size: 11px; color: var(--muted); }
 .credit a { color: inherit; }
+
+/* ---- daily card ---- */
+.daily { border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--good))); color: var(--accent-ink); }
+.daily .dtop { display: flex; justify-content: space-between; align-items: center; font: 600 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; opacity: .9; }
+.daily .streak { background: color-mix(in srgb, var(--accent-ink) 18%, transparent); padding: 5px 9px; border-radius: 999px; text-transform: none; letter-spacing: 0; }
+.daily .dtitle { font: 800 30px/1 var(--f-display); letter-spacing: -0.02em; }
+.daily p { font-size: 14px; opacity: .92; }
+.daily .drow { display: flex; gap: 8px; flex-wrap: wrap; }
+.daily .btn { background: var(--accent-ink); color: var(--accent); }
+.daily .btn.ghost { background: transparent; color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent-ink) 50%, transparent); }
+.daily .dnext { font: 500 12px/1.3 var(--f-mono); opacity: .85; }
+.dgrid { font-size: 26px; letter-spacing: 4px; line-height: 1.1; }
+.dgrid.big { font-size: 34px; margin: 4px 0; }
+.dailybox { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.dailybox .dnext { text-align: center; font: 500 12px/1.3 var(--f-mono); color: var(--muted); }
+.sharetext { width: 100%; font: 500 13px/1.4 var(--f-mono); padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); resize: none; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 999px; font-weight: 600; z-index: 20; }
 
 /* ---- play: full-screen map with floating cards ---- */
 body.playing .app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
@@ -221,6 +239,10 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 .rhead .bigscore { margin-top: 2px; }
 @media (max-width: 860px) {
   body.playing { overflow: hidden; }
+  .app { flex: none; }
+  body.playing .app { flex: 1; min-height: 0; }
+  body[data-view="home"] .panel { order: -1; border-top: 0; border-bottom: 1px solid var(--line); }
+  body[data-view="home"] .mapwrap { height: 46vh; }
   body.playing .mapwrap { height: auto; min-height: 0; }
   .modal { align-items: flex-end; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
   .mcard { max-height: 62%; width: 100%; }
@@ -306,13 +328,19 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <div class="rhead">
           <h2 id="rTopic"></h2>
           <div class="stars" id="rStars"></div>
+          <div class="dgrid big" id="rGrid" hidden></div>
           <div class="bigscore" id="rScore">0</div>
           <p class="lead" id="rNote"></p>
         </div>
         <div class="summary">
-          <div><small>Correct</small><b id="rCorrect"></b></div>
+          <div><small id="rL1">Correct</small><b id="rCorrect"></b></div>
           <div><small>Avg. miss</small><b id="rAvg"></b></div>
-          <div><small>Best</small><b id="rBest"></b></div>
+          <div><small id="rL3">Best</small><b id="rBest"></b></div>
+        </div>
+        <div class="dailybox" id="rDaily" hidden>
+          <button type="button" class="btn wide" id="shareBtn">Share result</button>
+          <textarea class="sharetext" id="shareText" readonly rows="3" hidden aria-label="Result to share"></textarea>
+          <p class="dnext" id="rNext"></p>
         </div>
         <div class="row">
           <button type="button" class="btn" id="againBtn">Play again</button>
@@ -330,9 +358,20 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   <aside class="panel">
     <!-- HOME -->
     <div class="view" id="vHome">
+      <div class="daily" id="dailyCard">
+        <div class="dtop"><span id="dLabel">Daily</span><span class="streak" id="dStreak" title="Days in a row">🔥 0</span></div>
+        <div class="dtitle">Today's 5</div>
+        <p id="dText">Five UPSC places, one tap each. Later places are worth more. A perfect day scores 1,000.</p>
+        <div class="dgrid" id="dGrid" hidden></div>
+        <div class="drow">
+          <button type="button" class="btn" id="dailyBtn">Play today's 5</button>
+          <button type="button" class="btn ghost" id="dShareBtn" hidden>Share</button>
+        </div>
+        <p class="dnext" id="dNext"></p>
+      </div>
       <div>
-        <h1>Find it on India's map before the exam asks.</h1>
-        <p class="lead" style="margin-top:8px">Prelims map questions, played as a game: national parks, passes, Ramsar sites, dams, Harappan sites, ports and more. Every answer comes with the fact UPSC asks about.</p>
+        <h2>Practice</h2>
+        <p class="lead">Prelims map questions on national parks, passes, Ramsar sites, dams, Harappan sites, ports and more, each with the fact UPSC asks about.</p>
       </div>
       <div>
         <h2>Mode</h2>
@@ -385,6 +424,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   </aside>
 </main>
 
+<div class="toast" id="toast" role="status" hidden></div>
 <script src="map-data.js"></script>
 <script src="places.js"></script>
 <script>
@@ -567,6 +607,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     for (const k in views) views[k].hidden = k !== v;
     $("stats").hidden = v !== "play";
     document.body.classList.toggle("playing", v === "play" || v === "result");
+    document.body.dataset.view = v;
     if (v !== "play") stopTimer();
     document.querySelector(".panel").scrollTop = 0; window.scrollTo(0, 0);
     applyView(); requestAnimationFrame(applyView);
@@ -579,6 +620,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     learn: "No score. See every place in a topic on the map with its fact, for quick revision.",
   };
   function renderHome() {
+    renderDaily();
     document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
     $("modeHelp").textContent = MODE_HELP[mode];
     $("roundsRow").hidden = $("timerRow").hidden = mode === "learn";
@@ -612,6 +654,64 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   $("homeBtn").onclick = goHome;
   function goHome() { svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
 
+  // ---------- daily 5 (same for everyone; resets at midnight IST) ----------
+  const DAILY_WEIGHTS = [100, 150, 200, 250, 300];
+  const IST = 5.5 * 3600e3;
+  const todayKey = (t = Date.now()) => new Date(t + IST).toISOString().slice(0, 10);
+  const dailyNo = () => Math.round((Date.parse(todayKey()) - Date.parse("2026-11-23")) / 864e5) + 1;
+  const msToNext = () => { const now = Date.now() + IST; return 864e5 - (now % 864e5); };
+  const fmtLeft = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor(ms % 3600e3 / 60e3); return `${h}h ${String(m).padStart(2, "0")}m`; };
+  function seededRng(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+    return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; }
+  function dailyItems() {
+    const rnd = seededRng("naksha-" + todayKey()); const all = ITEMS.filter((i) => !i.isState).slice();
+    for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
+    const picked = [], cats = new Set();
+    for (const it of all) { if (picked.length === 5) break; if (!cats.has(it.cat)) { picked.push(it); cats.add(it.cat); } }
+    return picked;
+  }
+  const emoji = (f) => f >= 0.8 ? "🟩" : f >= 0.5 ? "🟨" : f >= 0.2 ? "🟧" : "🟥";
+  const dailyLog = () => store.get("daily", {});
+  function dailyStreak() {
+    const log = dailyLog(); let n = 0, t = Date.now();
+    if (!log[todayKey(t)]) t -= 864e5;            // today not played yet: count up to yesterday
+    while (log[todayKey(t)]) { n++; t -= 864e5; }
+    return n;
+  }
+  function shareTextFor(rec) {
+    return `Naksha Daily #${rec.n} · ${rec.score}/1000\n${rec.grid}\nUPSC map practice: ${location.href.split("#")[0]}`;
+  }
+  async function share(text) {
+    try { await navigator.clipboard.writeText(text); toast("Result copied. Paste it anywhere."); return true; }
+    catch { const ta = $("shareText"); ta.hidden = false; ta.value = text; ta.focus(); ta.select(); toast("Select and copy the text below."); return false; }
+  }
+  let toastT = 0;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
+  function renderDaily() {
+    const rec = dailyLog()[todayKey()];
+    $("dLabel").textContent = `Daily #${dailyNo()} · ${new Date(Date.now() + IST).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}`;
+    $("dStreak").textContent = `🔥 ${dailyStreak()}`;
+    $("dGrid").hidden = $("dShareBtn").hidden = !rec;
+    if (rec) {
+      $("dText").textContent = `You scored ${rec.score}/1000 today.`;
+      $("dGrid").textContent = rec.grid; $("dailyBtn").textContent = "See today's result";
+      $("dNext").textContent = `Next Daily in ${fmtLeft(msToNext())}`;
+    } else {
+      $("dText").textContent = "Five UPSC places, one tap each. Later places are worth more. A perfect day scores 1,000.";
+      $("dailyBtn").textContent = "Play today's 5"; $("dNext").textContent = "Same five places for everyone today. New set at midnight IST.";
+    }
+  }
+  $("dailyBtn").onclick = () => {
+    const rec = dailyLog()[todayKey()];
+    if (rec) { showDailyResult(rec); return; }
+    mode = "pin"; rounds = Math.max(rounds, 5);
+    startGame.deferAsk = true; startGame(dailyItems(), `Daily #${dailyNo()}`); startGame.deferAsk = false;
+    game.qs = dailyItems(); game.daily = true; game.custom = true; ask();
+  };
+  $("dShareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) share(shareTextFor(rec)); };
+  $("shareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) share(shareTextFor(rec)); };
+  setInterval(() => { if (!views.home.hidden) renderDaily(); }, 30000);
+
   // ---------- game ----------
   let game = null, timerId = 0;
   function startGame(pool, label) {
@@ -620,7 +720,8 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const qs = shuffle(pool).slice(0, Math.min(rounds, pool.length));
     game = { qs, i: 0, score: 0, streak: 0, results: [], topicLabel: label || topicById(topicId).title, pool };
     gDots.replaceChildren();
-    show("play"); ask();
+    show("play");
+    if (!startGame.deferAsk) ask();
   }
   function updateStats() {
     $("sRound").textContent = `${Math.min(game.i + 1, game.qs.length)}/${game.qs.length}`;
@@ -648,20 +749,22 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     tick(); timerId = setInterval(tick, 100);
   }
   const stopTimer = () => clearInterval(timerId);
+  const maxPts = () => game?.daily ? DAILY_WEIGHTS[game.i] : 1000;
 
   function ask() {
     const q = game.qs[game.i]; game.cur = { q, hint: false, done: false, pending: null };
     clearMarks(); clearStateClasses(); updateStats();
     $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true;
-    $("pEyebrow").textContent = `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
+    $("pEyebrow").textContent = game.daily ? `Daily #${dailyNo()} · ${game.i + 1} of 5 · worth ${maxPts()}` : `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
     $("hintBtn").hidden = false; $("hintText").textContent = "";
     $("hintBtn").textContent = q.isState ? "Capital (½ pts)" : "State (½ pts)";
-    $("confirmBtn").hidden = mode !== "pin"; $("confirmBtn").disabled = true;
+    $("confirmBtn").hidden = mode !== "pin" || !!game.daily; $("confirmBtn").disabled = true;
+    if (game.daily) { $("hintBtn").hidden = true; $("hintText").textContent = `${q.catTitle}`; }
     svg.classList.toggle("statepick", mode === "pin" && !!q.isState);
     svg.classList.toggle("crosshair", mode === "pin" && !q.isState);
     if (mode === "pin") {
       $("pQ").textContent = q.name;
-      $("pSub").textContent = q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
+      $("pSub").textContent = game.daily ? "One tap answers. Zoom first if you need to." : q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
       playReset();
     } else {
       $("pQ").textContent = q.isState ? "Which state or UT is shaded?" : "Which place is marked?";
@@ -675,7 +778,8 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       }
       renderOptions(q);
     }
-    applyView(); startTimer();
+    applyView();
+    if (game.daily) { clearInterval(timerId); $("timerWrap").hidden = $("clock").hidden = true; } else startTimer();
   }
   function renderOptions(q) {
     const same = (q.isState ? stateItems : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
@@ -716,6 +820,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       $("hintText").textContent = picked ? (picked === "Jammu & Kashmir and Ladakh" ? "J&K / Ladakh selected" : `${picked} selected`) : "That's the sea";
     } else {
       game.cur.pending = { x, y };
+      if (game.daily) return confirmGuess();
       gMarks.querySelectorAll(".m-guess").forEach((e) => e.remove());
       circle(x, y, 7, "m-guess"); applyView();
       const [la, lo] = unproj(x, y); $("hintText").textContent = fmtCoord(la, lo);
@@ -731,8 +836,10 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   function finishPin(q, x, y) {
     const [glat, glon] = unproj(x, y);
     const d = haversine(glat, glon, q.lat, q.lon);
-    let pts = d <= 15 ? 1000 : Math.round(1000 * Math.exp(-(d - 15) / 150));
+    const f = d <= 15 ? 1 : Math.exp(-(d - 15) / 150);
+    let pts = Math.round(maxPts() * f);
     if (game.cur.hint) pts = Math.round(pts / 2);
+    game.cur.f = f;
     clearMarks();
     svgEl("line", { x1: x, y1: y, x2: q.x, y2: q.y, class: "m-line" }, gMarks);
     circle(x, y, 6, "m-guess");
@@ -787,7 +894,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     stopTimer();
     game.cur.done = true;
     game.score += pts; game.streak = ok ? game.streak + 1 : 0;
-    game.results.push({ q, ok, pts, d });
+    game.results.push({ q, ok, pts, d, f: game.cur.f ?? (ok ? 1 : 0) });
     const s = stats[q.id] || { s: 0, m: 0 }; s.s++;
     s.m = ok ? Math.max(0, s.m - 1) : s.m + 1; stats[q.id] = s; store.set("stats", stats);
     svg.classList.remove("crosshair", "statepick");
@@ -796,9 +903,9 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const q = game.cur.q;
     $("hintRow").hidden = true; $("feedback").hidden = false;
     $("fVerdict").textContent = v; $("fVerdict").className = cls;
-    $("fPoints").textContent = `+${pts.toLocaleString("en-IN")}`;
+    $("fPoints").textContent = game.daily ? `+${pts} / ${maxPts()}` : `+${pts.toLocaleString("en-IN")}`;
     $("fBar").style.width = "0%";
-    requestAnimationFrame(() => requestAnimationFrame(() => { $("fBar").style.width = (pts / 10) + "%"; }));
+    requestAnimationFrame(() => requestAnimationFrame(() => { $("fBar").style.width = (pts / maxPts() * 100) + "%"; }));
     $("fDetail").innerHTML = detail;
     $("fWhere").textContent = q.isState ? `Capital: ${q.capital}` : q.state;
     $("fTitle").textContent = q.name;
@@ -819,6 +926,14 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   });
 
   function finish() {
+    if (game.daily) {
+      const r = game.results;
+      const rec = { n: dailyNo(), score: game.score, grid: r.map((x) => emoji(x.f)).join(""), items: r.map((x) => [x.q.id, x.d == null ? null : Math.round(x.d), x.pts]) };
+      const log = dailyLog(); log[todayKey()] = rec; store.set("daily", log);
+      return showDailyResult(rec);
+    }
+    $("rDaily").hidden = $("rGrid").hidden = true; $("rStars").hidden = false; $("againBtn").hidden = false;
+    $("rL1").textContent = "Correct"; $("rL3").textContent = "Best"; $("changeBtn").textContent = "Change topic";
     stopTimer(); clearMarks(); clearStateClasses();
     const r = game.results, n = r.length, correct = r.filter((x) => x.ok).length;
     const key = mode + ":" + topicId;
@@ -847,6 +962,32 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       if (x.q.isState) statePaths[x.q.name]?.classList.add("wrong");
       else circle(x.q.x, x.q.y, 5, "m-guess");
     }
+    show("result"); resetView(); applyView();
+  }
+  function showDailyResult(rec) {
+    stopTimer(); clearMarks(); clearStateClasses();
+    const res = rec.items.map(([id, d, pts]) => ({ q: byId[id], d, pts })).filter((x) => x.q);
+    game = { qs: res.map((x) => x.q), i: 5, score: rec.score, streak: 0, daily: true, custom: true, pool: res.map((x) => x.q), topicLabel: `Daily #${rec.n}`,
+      results: res.map((x) => ({ ...x, ok: x.d != null && x.d < 150 })) };
+    $("rTopic").textContent = `Naksha Daily #${rec.n}`;
+    $("rStars").hidden = true; $("rGrid").hidden = false; $("rGrid").textContent = rec.grid;
+    $("rScore").textContent = rec.score; $("rNote").textContent = "out of 1,000";
+    $("rL1").textContent = "Streak"; $("rCorrect").textContent = `🔥 ${dailyStreak()}`;
+    const ds = res.filter((x) => x.d != null).map((x) => x.d);
+    $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
+    const all = Object.values(dailyLog());
+    $("rL3").textContent = "Days played"; $("rBest").textContent = all.length;
+    $("rDaily").hidden = false; $("shareText").hidden = true;
+    $("rNext").textContent = `Next Daily in ${fmtLeft(msToNext())} (midnight IST)`;
+    $("againBtn").hidden = true; $("missBtn").disabled = game.results.every((x) => x.ok); $("changeBtn").textContent = "Practice more";
+    const ul = $("review"); ul.replaceChildren();
+    game.results.forEach((x, k) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span aria-hidden="true">${Array.from(rec.grid)[k] || ""}</span><button type="button">${esc(x.q.name)}</button><span class="d">${x.d != null ? x.d + " km · " : ""}${x.pts}/${DAILY_WEIGHTS[k]}</span>`;
+      li.querySelector("button").onclick = () => showOnMap(x.q);
+      ul.appendChild(li);
+      if (!x.ok) circle(x.q.x, x.q.y, 5, "m-guess");
+    });
     show("result"); resetView(); applyView();
   }
   function showOnMap(q) {
@@ -903,6 +1044,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   }
 
   // ---------- boot ----------
+  document.body.dataset.view = "home";
   renderHome(); previewTopic(); applyView();
   requestAnimationFrame(applyView);
 })();

@@ -2,7 +2,11 @@
 
 An India map quiz game for UPSC Prelims map questions. It's a plain static site (HTML + JS) that needs no server, build step or API key.
 
-## How a round works
+## Daily 5
+
+Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
+
+## How a practice round works
 
 The map fills the screen. A question card at the top shows the place and a countdown (30 s, 15 s or off). Drop a pin (or pick a state), adjust it if you like, then press **Confirm** (or Enter). The result sheet shows the line from your pin to the answer, the distance, a points bar and the UPSC fact. After the last round a summary card shows your score, stars and a review of every place.
 

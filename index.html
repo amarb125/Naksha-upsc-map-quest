@@ -182,6 +182,52 @@ select.search { appearance: auto; }
 .credit { font-size: 11px; color: var(--muted); }
 .credit a { color: inherit; }
 
+/* ---- play: full-screen map with floating cards ---- */
+body.playing .app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: none; }
+.state.picked { fill: color-mix(in srgb, var(--pin) 45%, var(--land)); }
+.play { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 12px;
+  padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.play > * { pointer-events: auto; }
+.qcard, .sheet, .mcard { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 22%, transparent); }
+.qcard { width: min(560px, calc(100% - 64px)); margin-right: 52px; padding: 12px 18px 0; text-align: center; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+@media (min-width: 861px) { .qcard { margin-right: 0; } }
+.qtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.qcard .eyebrow { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; text-align: left; }
+.qcard .q { font: 800 26px/1.15 var(--f-display); letter-spacing: -0.01em; text-wrap: balance; }
+.qcard .sub { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.clock { font: 600 15px/1 var(--f-mono); font-variant-numeric: tabular-nums; min-width: 2.6em; padding: 5px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.clock.low { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.timer { height: 4px; margin: 0 -18px; background: var(--line); }
+.timer i { display: block; height: 100%; width: 100%; background: var(--pin); }
+.qcard .progress { margin: 0 -18px; border-radius: 0; height: 3px; }
+.sheet { width: min(620px, 100%); padding: 12px; max-height: 58%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.sheet .options { grid-template-columns: 1fr 1fr; }
+.actrow { display: flex; align-items: center; gap: 10px; }
+.hinttext { flex: 1; min-width: 0; font: 500 13px/1.3 var(--f-mono); color: var(--muted); text-align: center; }
+.btn.small { padding: 10px 12px; font-size: 13px; }
+#confirmBtn { min-width: 120px; }
+.sheet .feedback { border-top: 0; padding-top: 0; }
+.pbar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--pin), var(--good)); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+.verdict b { font-size: 24px; }
+.verdict span { font-size: 18px; }
+.modal { position: absolute; inset: 0; pointer-events: none; display: flex; justify-content: flex-end; align-items: flex-start; padding: 12px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.mcard { pointer-events: auto; width: min(420px, 100%); max-height: 100%; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.rhead { text-align: center; }
+.stars { font-size: 30px; letter-spacing: 6px; color: var(--pin); line-height: 1.2; }
+.rhead .bigscore { margin-top: 2px; }
+@media (max-width: 860px) {
+  body.playing { overflow: hidden; }
+  body.playing .mapwrap { height: auto; min-height: 0; }
+  .modal { align-items: flex-end; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .mcard { max-height: 62%; width: 100%; }
+  .qcard .q { font-size: 21px; }
+  .sheet .options { grid-template-columns: 1fr; gap: 6px; }
+  .sheet .opt { padding: 9px 12px; }
+}
 @media (max-width: 860px) {
   body { overflow: auto; }
   .app { grid-template-columns: 1fr; grid-template-rows: auto auto; }
@@ -223,6 +269,62 @@ select.search { appearance: auto; }
     </div>
     <div class="coords" id="coords">23.44°N · 82.50°E</div>
     <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Tropic &amp; 82.5°E</label>
+
+    <!-- PLAY: overlays on the full-screen map -->
+    <div class="play" id="vPlay" hidden>
+      <div class="qcard">
+        <div class="qtop"><span class="eyebrow" id="pEyebrow"></span><span class="clock" id="clock" hidden>30</span></div>
+        <div class="q" id="pQ"></div>
+        <div class="sub" id="pSub"></div>
+        <div class="timer" id="timerWrap" hidden><i id="timerBar"></i></div>
+        <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
+      </div>
+      <div class="sheet">
+        <div class="options" id="options" hidden></div>
+        <div class="actrow" id="hintRow">
+          <button type="button" class="btn ghost small" id="hintBtn">State (½ pts)</button>
+          <span class="hinttext" id="hintText"></span>
+          <button type="button" class="btn" id="confirmBtn" disabled>Confirm</button>
+        </div>
+        <div class="feedback" id="feedback" hidden>
+          <div class="verdict"><b id="fVerdict"></b><span id="fPoints"></span></div>
+          <div class="pbar" aria-hidden="true"><i id="fBar"></i></div>
+          <div id="fDetail" class="lead"></div>
+          <div class="factcard">
+            <div class="where" id="fWhere"></div>
+            <div class="ttl" id="fTitle"></div>
+            <p id="fFact"></p>
+          </div>
+          <button type="button" class="btn wide" id="nextBtn">Next round</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT: summary card over the map -->
+    <div class="modal" id="vResult" hidden>
+      <div class="mcard">
+        <div class="rhead">
+          <h2 id="rTopic"></h2>
+          <div class="stars" id="rStars"></div>
+          <div class="bigscore" id="rScore">0</div>
+          <p class="lead" id="rNote"></p>
+        </div>
+        <div class="summary">
+          <div><small>Correct</small><b id="rCorrect"></b></div>
+          <div><small>Avg. miss</small><b id="rAvg"></b></div>
+          <div><small>Best</small><b id="rBest"></b></div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="againBtn">Play again</button>
+          <button type="button" class="btn ghost" id="missBtn">Practise misses</button>
+          <button type="button" class="btn ghost" id="changeBtn">Change topic</button>
+        </div>
+        <div>
+          <h2>Review · tap a place to see it</h2>
+          <ul class="review" id="review"></ul>
+        </div>
+      </div>
+    </div>
   </section>
 
   <aside class="panel">
@@ -253,56 +355,16 @@ select.search { appearance: auto; }
           <button type="button" class="chip" data-n="30" aria-pressed="false">30</button>
         </div>
       </div>
+      <div class="row" id="timerRow">
+        <h2 style="margin:0">Timer</h2>
+        <div class="chips" role="group" aria-label="Time per round">
+          <button type="button" class="chip" data-t="0" aria-pressed="false">Off</button>
+          <button type="button" class="chip" data-t="30" aria-pressed="true">30 s</button>
+          <button type="button" class="chip" data-t="15" aria-pressed="false">15 s</button>
+        </div>
+      </div>
       <button type="button" class="btn wide" id="startBtn">Start</button>
       <p class="credit">Map: state boundaries from <a href="https://github.com/datameet/maps" target="_blank" rel="noopener">DataMeet India community</a> (CC BY 4.0), drawn as per the Survey of India outline. Locations are approximate.</p>
-    </div>
-
-    <!-- PLAY -->
-    <div class="view" id="vPlay" hidden>
-      <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
-      <div class="prompt">
-        <div class="eyebrow" id="pEyebrow"></div>
-        <div class="q" id="pQ"></div>
-        <div class="sub" id="pSub"></div>
-      </div>
-      <div class="options" id="options" hidden></div>
-      <div class="hintrow" id="hintRow">
-        <span id="hintText">Tap the map where you think it is. Pinch or scroll to zoom.</span>
-        <button type="button" class="linkbtn" id="hintBtn">Show state (½ points)</button>
-      </div>
-      <div class="feedback" id="feedback" hidden>
-        <div class="verdict"><b id="fVerdict"></b><span id="fPoints"></span></div>
-        <div id="fDetail" class="lead"></div>
-        <div class="factcard">
-          <div class="where" id="fWhere"></div>
-          <div class="ttl" id="fTitle"></div>
-          <p id="fFact"></p>
-        </div>
-        <button type="button" class="btn wide" id="nextBtn">Next</button>
-      </div>
-    </div>
-
-    <!-- RESULT -->
-    <div class="view" id="vResult" hidden>
-      <div>
-        <h2 id="rTopic"></h2>
-        <div class="bigscore" id="rScore">0</div>
-        <p class="lead" id="rNote"></p>
-      </div>
-      <div class="summary">
-        <div><small>Correct</small><b id="rCorrect"></b></div>
-        <div><small>Avg. miss</small><b id="rAvg"></b></div>
-        <div><small>Best</small><b id="rBest"></b></div>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" id="againBtn">Play again</button>
-        <button type="button" class="btn ghost" id="missBtn">Practise misses</button>
-        <button type="button" class="btn ghost" id="changeBtn">Change topic</button>
-      </div>
-      <div>
-        <h2>Review — tap a place to see it</h2>
-        <ul class="review" id="review"></ul>
-      </div>
     </div>
 
     <!-- LEARN -->
@@ -488,7 +550,7 @@ select.search { appearance: auto; }
 
   // ---------- markers ----------
   function clearMarks() { gMarks.replaceChildren(); }
-  function clearStateClasses() { for (const p of Object.values(statePaths)) p.classList.remove("target", "wrong", "hint"); }
+  function clearStateClasses() { for (const p of Object.values(statePaths)) p.classList.remove("target", "wrong", "hint", "picked"); }
   function circle(x, y, r, cls, parent = gMarks) { return svgEl("circle", { cx: x, cy: y, "data-r": r, r, class: cls }, parent); }
   function label(x, y, text, parent = gMarks) {
     const t = svgEl("text", { "data-ax": x, "data-ay": y, "data-dx": 10, "data-dy": 4, "data-fs": 12, x, y, class: "m-label" }, parent);
@@ -501,9 +563,16 @@ select.search { appearance: auto; }
 
   // ---------- views ----------
   const views = { home: $("vHome"), play: $("vPlay"), result: $("vResult"), learn: $("vLearn") };
-  function show(v) { for (const k in views) views[k].hidden = k !== v; $("stats").hidden = v !== "play"; document.querySelector(".panel").scrollTop = 0; }
+  function show(v) {
+    for (const k in views) views[k].hidden = k !== v;
+    $("stats").hidden = v !== "play";
+    document.body.classList.toggle("playing", v === "play" || v === "result");
+    if (v !== "play") stopTimer();
+    document.querySelector(".panel").scrollTop = 0; window.scrollTo(0, 0);
+    applyView(); requestAnimationFrame(applyView);
+  }
 
-  let mode = "pin", topicId = "mix", rounds = 10;
+  let mode = "pin", topicId = "mix", rounds = 10, timeLimit = store.get("timer", 30);
   const MODE_HELP = {
     pin: "A place is named. Tap where it is on the map. Closer taps score more (up to 1,000).",
     spot: "A place is marked on the map. Pick its name from four options.",
@@ -512,7 +581,8 @@ select.search { appearance: auto; }
   function renderHome() {
     document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === mode));
     $("modeHelp").textContent = MODE_HELP[mode];
-    $("roundsRow").hidden = mode === "learn";
+    $("roundsRow").hidden = $("timerRow").hidden = mode === "learn";
+    document.querySelectorAll("[data-t]").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.t === timeLimit));
     $("startBtn").textContent = mode === "learn" ? "Open revision map" : "Start";
     const box = $("topics"); box.replaceChildren();
     for (const t of TOPICS) {
@@ -537,12 +607,13 @@ select.search { appearance: auto; }
   document.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => {
     rounds = +b.dataset.n; document.querySelectorAll("[data-n]").forEach((c) => c.setAttribute("aria-pressed", c === b));
   });
+  document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { timeLimit = +b.dataset.t; store.set("timer", timeLimit); renderHome(); });
   $("startBtn").onclick = () => mode === "learn" ? openLearn(topicId) : startGame(topicById(topicId).items);
   $("homeBtn").onclick = goHome;
-  function goHome() { svg.classList.remove("crosshair", "statepick"); $("maptip").hidden = true; show("home"); renderHome(); previewTopic(); resetView(); }
+  function goHome() { svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
 
   // ---------- game ----------
-  let game = null;
+  let game = null, timerId = 0;
   function startGame(pool, label) {
     pool = pool.filter(Boolean);
     if (!pool.length) return;
@@ -557,38 +628,54 @@ select.search { appearance: auto; }
     $("sStreak").textContent = game.streak;
     $("prog").style.width = (game.i / game.qs.length * 100) + "%";
   }
+  // keep revealed answers clear of the bottom sheet
+  const flyToPlay = (x, y, w) => flyTo(x, y + (w * H / W) * 0.14, w);
+  const playReset = () => flyTo(W / 2, H / 2 + 30, W * 1.12);
+
+  function startTimer() {
+    clearInterval(timerId);
+    const wrap = $("timerWrap"), clock = $("clock");
+    wrap.hidden = clock.hidden = !timeLimit;
+    if (!timeLimit) return;
+    const end = performance.now() + timeLimit * 1000;
+    const tick = () => {
+      const left = Math.max(0, end - performance.now());
+      $("timerBar").style.width = (left / (timeLimit * 10)) + "%";
+      clock.textContent = Math.ceil(left / 1000);
+      clock.classList.toggle("low", left < 5000);
+      if (left <= 0) { clearInterval(timerId); timeUp(); }
+    };
+    tick(); timerId = setInterval(tick, 100);
+  }
+  const stopTimer = () => clearInterval(timerId);
+
   function ask() {
-    const q = game.qs[game.i]; game.cur = { q, hint: false, done: false };
+    const q = game.qs[game.i]; game.cur = { q, hint: false, done: false, pending: null };
     clearMarks(); clearStateClasses(); updateStats();
-    if (matchMedia("(max-width: 860px)").matches) window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true;
-    $("pEyebrow").textContent = q.catTitle;
-    $("hintBtn").hidden = false;
+    $("pEyebrow").textContent = `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
+    $("hintBtn").hidden = false; $("hintText").textContent = "";
+    $("hintBtn").textContent = q.isState ? "Capital (½ pts)" : "State (½ pts)";
+    $("confirmBtn").hidden = mode !== "pin"; $("confirmBtn").disabled = true;
     svg.classList.toggle("statepick", mode === "pin" && !!q.isState);
     svg.classList.toggle("crosshair", mode === "pin" && !q.isState);
     if (mode === "pin") {
       $("pQ").textContent = q.name;
-      $("pSub").textContent = q.isState ? "Tap this state or UT on the map." : "Where is it? Tap the map.";
-      $("hintText").textContent = q.isState ? "Small UTs: zoom in first." : "Pinch or scroll to zoom for precision.";
-      $("hintBtn").textContent = q.isState ? "Show capital (½ points)" : "Show state (½ points)";
-      $("maptip").hidden = false; $("maptip").textContent = q.isState ? `Tap: ${q.name}` : `Pin: ${q.name}`;
-      resetView();
+      $("pSub").textContent = q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
+      playReset();
     } else {
-      $("maptip").hidden = true;
       $("pQ").textContent = q.isState ? "Which state or UT is shaded?" : "Which place is marked?";
-      $("pSub").textContent = q.isState ? "" : "Zoom in to see its surroundings.";
-      $("hintText").textContent = "Keys 1–4 also work.";
-      $("hintBtn").textContent = q.isState ? "Show capital (½ points)" : "Show state (½ points)";
+      $("pSub").textContent = "Pick one answer · keys 1–4";
       if (q.isState) {
         statePaths[q.name]?.classList.add("target");
-        const c = stateCentroid(q.name); if (c) flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 4, 120)));
+        const c = stateCentroid(q.name); if (c) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 4, 140)));
       } else {
         circle(q.x, q.y, 7, "m-quiz pulse"); circle(q.x, q.y, 6, "m-quiz");
-        flyTo(q.x, q.y, 260);
+        flyToPlay(q.x, q.y, 280);
       }
       renderOptions(q);
     }
-    applyView();
+    applyView(); startTimer();
   }
   function renderOptions(q) {
     const same = (q.isState ? stateItems : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
@@ -607,7 +694,7 @@ select.search { appearance: auto; }
     c.hint = true; $("hintBtn").hidden = true;
     const q = c.q;
     if (q.isState) { $("hintText").textContent = `Capital: ${q.capital}`; return; }
-    $("hintText").textContent = `It is in ${q.state}.`;
+    $("hintText").textContent = `In ${q.state}`;
     const sp = statePaths[STATE_ALIAS[q.state] || q.state];
     if (sp) { sp.classList.add("hint"); if (mode === "pin") { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, 90))); } }
   };
@@ -619,12 +706,29 @@ select.search { appearance: auto; }
     if (q.isState) {
       let picked = target?.closest?.("[data-state]")?.dataset.state || null;
       if (picked !== q.name) {
-        const tp = statePaths[q.name]; const b = tp.getBBox();
+        const b = statePaths[q.name].getBBox();
         const near = (b.width * b.height < 60) && x > b.x - 8 && x < b.x + b.width + 8 && y > b.y - 8 && y < b.y + b.height + 8;
         if (near) picked = q.name;
       }
-      finishState(q, picked); return;
+      for (const p of Object.values(statePaths)) p.classList.remove("picked");
+      if (picked) statePaths[picked]?.classList.add("picked");
+      game.cur.pending = { picked };
+      $("hintText").textContent = picked ? (picked === "Jammu & Kashmir and Ladakh" ? "J&K / Ladakh selected" : `${picked} selected`) : "That's the sea";
+    } else {
+      game.cur.pending = { x, y };
+      gMarks.querySelectorAll(".m-guess").forEach((e) => e.remove());
+      circle(x, y, 7, "m-guess"); applyView();
+      const [la, lo] = unproj(x, y); $("hintText").textContent = fmtCoord(la, lo);
     }
+    $("confirmBtn").disabled = false;
+  }
+  function confirmGuess() {
+    const c = game?.cur; if (!c || c.done || !c.pending) return;
+    if (c.q.isState) finishState(c.q, c.pending.picked); else finishPin(c.q, c.pending.x, c.pending.y);
+  }
+  $("confirmBtn").onclick = confirmGuess;
+
+  function finishPin(q, x, y) {
     const [glat, glon] = unproj(x, y);
     const d = haversine(glat, glon, q.lat, q.lon);
     let pts = d <= 15 ? 1000 : Math.round(1000 * Math.exp(-(d - 15) / 150));
@@ -635,80 +739,99 @@ select.search { appearance: auto; }
     circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer");
     label(q.x, q.y, q.name);
     const dx = Math.abs(x - q.x), dy = Math.abs(y - q.y);
-    flyTo((x + q.x) / 2, (y + q.y) / 2, Math.min(W, Math.max(dx * 1.8, dy * 1.8 * W / H, 110)));
-    const verdict = d < 25 ? ["Bullseye", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
-    const ok = d < 150;
-    record(q, ok, pts, d);
+    flyToPlay((x + q.x) / 2, (y + q.y) / 2, Math.min(W * 1.12, Math.max(dx * 2, dy * 2.4 * W / H, 120)));
+    const verdict = d < 25 ? ["Bullseye!", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
+    record(q, d < 150, pts, d);
     feedback(verdict, pts, `Your pin was <b>${Math.round(d).toLocaleString("en-IN")} km</b> away.`);
   }
   function finishState(q, picked) {
     const ok = picked === q.name;
-    let pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
+    const pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
     clearStateClasses();
     statePaths[q.name].classList.add("target");
     if (!ok && picked && statePaths[picked]) statePaths[picked].classList.add("wrong");
     const c = stateCentroid(q.name); label(c[0], c[1], q.name);
-    if (!ok) flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 3, 160)));
+    if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, 160)));
     record(q, ok, pts, null);
-    const tapped = !picked ? "You tapped the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You tapped Jammu & Kashmir / Ladakh." : `You tapped ${esc(picked)}.`;
-    feedback(ok ? ["Correct", "good"] : ["Not quite", "bad"], pts, ok ? "Right state." : `${tapped} The shaded one is ${esc(q.name)}.`);
+    const tapped = !picked ? "You picked the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You picked Jammu & Kashmir / Ladakh." : `You picked ${esc(picked)}.`;
+    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state." : `${tapped} The shaded one is ${esc(q.name)}.`);
   }
   function answerSpot(o, btn) {
     if (game.cur.done) return;
-    const q = game.cur.q, ok = o.id === q.id;
+    const q = game.cur.q, ok = o?.id === q.id;
     const pts = ok ? (game.cur.hint ? 500 : 1000) : 0;
     document.querySelectorAll(".opt").forEach((b) => { b.disabled = true; if (b.dataset.id === q.id) b.classList.add("right"); });
-    if (!ok) {
+    if (o && !ok) {
       btn.classList.add("wrongpick");
       if (!o.isState) { circle(o.x, o.y, 5, "m-guess"); label(o.x, o.y, o.name); }
       else statePaths[o.name]?.classList.add("wrong");
     }
     if (!q.isState) label(q.x, q.y, q.name); else { const c = stateCentroid(q.name); label(c[0], c[1], q.name); }
     record(q, ok, pts, null);
+    if (!o) return feedback(["Time's up", "bad"], 0, `The answer is ${esc(q.name)}.`);
     const where = o.isState ? "" : (!ok ? ` ${esc(o.name)} is in ${esc(o.state)}.` : "");
-    feedback(ok ? ["Correct", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted." : `The answer is ${esc(q.name)}.${where}`);
+    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Well spotted." : `The answer is ${esc(q.name)}.${where}`);
+  }
+  function timeUp() {
+    const c = game?.cur; if (!c || c.done || views.play.hidden) return;
+    if (c.pending) return confirmGuess();
+    if (mode === "spot") return answerSpot(null, null);
+    const q = c.q;
+    clearMarks(); clearStateClasses();
+    if (q.isState) { statePaths[q.name].classList.add("target"); const cc = stateCentroid(q.name); label(cc[0], cc[1], q.name); flyToPlay(cc[0], cc[1], Math.min(W * 1.12, Math.max(cc[2] * 3, 160))); }
+    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyToPlay(q.x, q.y, 220); }
+    record(q, false, 0, null);
+    feedback(["Time's up", "bad"], 0, "No pin was placed this round.");
   }
   function record(q, ok, pts, d) {
+    stopTimer();
     game.cur.done = true;
     game.score += pts; game.streak = ok ? game.streak + 1 : 0;
     game.results.push({ q, ok, pts, d });
     const s = stats[q.id] || { s: 0, m: 0 }; s.s++;
     s.m = ok ? Math.max(0, s.m - 1) : s.m + 1; stats[q.id] = s; store.set("stats", stats);
-    svg.classList.remove("crosshair", "statepick"); $("maptip").hidden = true;
+    svg.classList.remove("crosshair", "statepick");
   }
   function feedback([v, cls], pts, detail) {
     const q = game.cur.q;
     $("hintRow").hidden = true; $("feedback").hidden = false;
     $("fVerdict").textContent = v; $("fVerdict").className = cls;
-    $("fPoints").textContent = `+${pts}`;
+    $("fPoints").textContent = `+${pts.toLocaleString("en-IN")}`;
+    $("fBar").style.width = "0%";
+    requestAnimationFrame(() => requestAnimationFrame(() => { $("fBar").style.width = (pts / 10) + "%"; }));
     $("fDetail").innerHTML = detail;
     $("fWhere").textContent = q.isState ? `Capital: ${q.capital}` : q.state;
     $("fTitle").textContent = q.name;
     $("fFact").textContent = q.fact;
-    $("nextBtn").textContent = game.i + 1 >= game.qs.length ? "See results" : "Next";
+    $("nextBtn").textContent = game.i + 1 >= game.qs.length ? "See results" : "Next round";
     updateStats(); applyView();
     $("nextBtn").focus({ preventScroll: true });
-    if (matchMedia("(max-width: 860px)").matches) $("feedback").scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
   }
   $("nextBtn").onclick = () => { game.i++; if (game.i >= game.qs.length) finish(); else ask(); };
   addEventListener("keydown", (e) => {
     if (views.play.hidden || !game) return;
     if (e.target.tagName === "INPUT") return;
-    if (game.cur.done && (e.key === "Enter" || e.key === " ") && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click(); }
+    if (e.key === "Enter" || e.key === " ") {
+      if (game.cur.done && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click(); }
+      else if (!game.cur.done && game.cur.pending && document.activeElement !== $("confirmBtn")) { e.preventDefault(); confirmGuess(); }
+    }
     if (!game.cur.done && mode === "spot" && /^[1-4]$/.test(e.key)) document.querySelectorAll(".opt")[+e.key - 1]?.click();
   });
 
   function finish() {
-    clearMarks(); clearStateClasses();
+    stopTimer(); clearMarks(); clearStateClasses();
     const r = game.results, n = r.length, correct = r.filter((x) => x.ok).length;
     const key = mode + ":" + topicId;
     const prevBest = best[key] || 0;
     const isTopicRun = !game.custom;
     if (isTopicRun && game.score > prevBest && n >= 10) { best[key] = game.score; store.set("best", best); }
     const ds = r.filter((x) => x.d != null).map((x) => x.d);
+    const frac = game.score / (n * 1000);
+    $("rStars").textContent = "★★★".slice(0, frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0).padEnd(3, "☆");
+    $("rStars").setAttribute("aria-label", `${frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0} of 3 stars`);
     $("rTopic").textContent = `${game.topicLabel} · ${mode === "pin" ? "Pin it" : "Spot it"}`;
     $("rScore").textContent = game.score.toLocaleString("en-IN");
-    $("rNote").textContent = `out of ${(n * 1000).toLocaleString("en-IN")}` + (isTopicRun && game.score > prevBest && prevBest && n >= 10 ? " — a new best." : ".");
+    $("rNote").textContent = `out of ${(n * 1000).toLocaleString("en-IN")}` + (isTopicRun && game.score > prevBest && prevBest && n >= 10 ? " · new best!" : "");
     $("rCorrect").textContent = `${correct}/${n}`;
     $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
     $("rBest").textContent = best[key] ? best[key].toLocaleString("en-IN") : "—";
@@ -716,14 +839,13 @@ select.search { appearance: auto; }
     const ul = $("review"); ul.replaceChildren();
     r.forEach((x) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span class="${x.ok ? "ok" : "no"}" aria-label="${x.ok ? "correct" : "missed"}">${x.ok ? "✓" : "✗"}</span><button type="button">${esc(x.q.name)}</button><span class="d">${x.d != null ? Math.round(x.d) + " km" : x.ok ? "+" + x.pts : "0"}</span>`;
+      li.innerHTML = `<span class="${x.ok ? "ok" : "no"}" aria-label="${x.ok ? "correct" : "missed"}">${x.ok ? "✓" : "✗"}</span><button type="button">${esc(x.q.name)}</button><span class="d">${x.d != null ? Math.round(x.d) + " km" : "+" + x.pts}</span>`;
       li.querySelector("button").onclick = () => showOnMap(x.q);
       ul.appendChild(li);
     });
-    // show the misses on the map
     for (const x of r) if (!x.ok) {
       if (x.q.isState) statePaths[x.q.name]?.classList.add("wrong");
-      else { circle(x.q.x, x.q.y, 5, "m-guess"); }
+      else circle(x.q.x, x.q.y, 5, "m-guess");
     }
     show("result"); resetView(); applyView();
   }

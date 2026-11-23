@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Naksha UPSC Map Quest</title>
+<title>Naksha India Map Quest</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,7 +301,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 </head>
 <body>
 <header class="bar">
-  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><b>Naksha</b><span>UPSC Map Quest</span></button>
+  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><b>Naksha</b><span>India Map Quest</span></button>
   <button type="button" class="soundbtn" id="soundBtn" aria-pressed="true" aria-label="Sound on">🔊</button>
   <div class="stats" id="stats" hidden>
     <div class="stat"><small>Round</small><b id="sRound">1/10</b></div>
@@ -403,7 +403,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       <div class="daily" id="dailyCard">
         <div class="dtop"><span id="dLabel">Daily</span><span class="streak" id="dStreak" title="Days in a row">🔥 0</span></div>
         <div class="dtitle">Today's 5</div>
-        <p id="dText">Five UPSC places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
+        <p id="dText">Five places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
         <div class="dgrid" id="dGrid" hidden></div>
         <div class="drow">
           <button type="button" class="btn" id="dailyBtn">Play today's 5</button>
@@ -413,7 +413,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       </div>
       <div>
         <h2>Practice</h2>
-        <p class="lead">Prelims map questions on national parks, passes, Ramsar sites, dams, Harappan sites, ports and more, each with the fact UPSC asks about.</p>
+        <p class="lead">Exam-style map questions on national parks, passes, Ramsar sites, dams, Harappan sites, ports and more, each with a key fact to remember.</p>
       </div>
       <div>
         <h2>Mode</h2>
@@ -461,7 +461,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     <div class="view" id="vLearn" hidden>
       <div>
         <h1 style="font-size:24px">Revise the map</h1>
-        <p class="lead" style="margin-top:6px">Every place in the topic is marked. Tap a dot or a name to read its UPSC fact.</p>
+        <p class="lead" style="margin-top:6px">Every place in the topic is marked. Tap a dot or a name to read its key fact.</p>
       </div>
       <select class="search" id="learnTopic" aria-label="Topic"></select>
       <input class="search" id="learnSearch" type="search" placeholder="Search places or states" aria-label="Search places">
@@ -547,7 +547,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   const gGrid = $("grid");
   for (let lon = 70; lon <= 95; lon += 5) { const [x] = proj(0, lon); svgEl("line", { x1: x, y1: -2000, x2: x, y2: H + 2000 }, gGrid); }
   for (let lat = 10; lat <= 35; lat += 5) { const [, y] = proj(lat, 0); svgEl("line", { x1: -2000, y1: y, x2: W + 2000, y2: y }, gGrid); }
-  // guide lines that UPSC loves: Tropic of Cancer and the Standard Meridian
+  // guide lines: Tropic of Cancer and the Standard Meridian
   const gGuide = $("guide");
   { const [, y] = proj(23.44, 0); svgEl("line", { x1: -2000, y1: y, x2: W + 2000, y2: y }, gGuide);
     const t = svgEl("text", { x: 6, y: y - 4, "data-fs": 9 }, gGuide); t.textContent = "TROPIC OF CANCER 23°26′N";
@@ -699,7 +699,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   const pinLike = () => mode === "pin" || mode === "clue";
   const MODE_HELP = {
     pin: "A place is named. Tap where it is on the map. Closer taps score more (up to 1,000).",
-    clue: "Indirect questions: you get a UPSC-style clue, not the name. Work out the place and pin it.",
+    clue: "Indirect questions: you get an exam-style clue, not the name. Work out the place and pin it.",
     spot: "A place is marked on the map. Pick its name from four options.",
     learn: "No score. See every place in a topic on the map with its fact, for quick revision.",
   };
@@ -822,7 +822,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     return n;
   }
   function shareTextFor(rec) {
-    return `Naksha Daily #${rec.n} · ${rec.score}/1000\n${rec.grid}\nUPSC map practice: ${location.href.split("#")[0]}`;
+    return `Naksha Daily #${rec.n} · ${rec.score}/1000\n${rec.grid}\nIndia map quiz: ${location.href.split("#")[0]}`;
   }
   async function share(text) {
     try { await navigator.clipboard.writeText(text); toast("Result copied. Paste it anywhere."); return true; }
@@ -840,7 +840,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       $("dGrid").textContent = rec.grid; $("dailyBtn").textContent = "See today's result";
       $("dNext").textContent = `Next Daily in ${fmtLeft(msToNext())}`;
     } else {
-      $("dText").textContent = "Five UPSC places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.";
+      $("dText").textContent = "Five places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.";
       $("dailyBtn").textContent = "Play today's 5"; $("dNext").textContent = "Same five places for everyone today. New set at midnight IST.";
     }
   }

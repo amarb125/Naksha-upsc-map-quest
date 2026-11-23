@@ -1,6 +1,6 @@
-# Naksha — UPSC Map Quest
+# Naksha — India Map Quest
 
-An India map quiz game for UPSC Prelims map questions. It's a plain static site (HTML + JS) that needs no server, build step or API key.
+An India map quiz game for competitive-exam map questions. It's a plain static site (HTML + JS) that needs no server, build step or API key.
 
 ## Daily 5
 
@@ -16,12 +16,12 @@ The map fills the screen. A question card at the top shows the place and a count
 
 ## Modes
 
-- **Clue hunt**: indirect, UPSC-style questions. You get a clue (for example *"The world's only floating national park…"*) instead of the name, and pin the place it describes.
+- **Clue hunt**: indirect, exam-style questions. You get a clue (for example *"The world's only floating national park…"*) instead of the name, and pin the place it describes.
 - **Level: Tough**: stricter distance scoring, no hints, and in Spot it the four choices are the nearest look-alike places from the same topic.
 
 - **Pin it**: a place is named; tap where it is on India's map. Points fall with distance (1,000 within 15 km).
 - **Spot it**: a place is marked (or a state shaded); choose its name from four options.
-- **Revise**: every place in a topic shown on the map, with search and the UPSC fact for each.
+- **Revise**: every place in a topic shown on the map, with search and the key fact for each.
 
 Topics (447 places + 34 States/UTs): national parks & tiger reserves; lakes, wetlands & Ramsar sites; mountain passes & peaks; rivers, dams & waterfalls; history, art & culture; ports, islands, straits & space; minerals, energy & industry; States & UTs.
 
@@ -41,7 +41,7 @@ Then visit http://localhost:8000.
 
 1. Go to https://vercel.com/new and sign in with GitHub.
 2. Import this repository and click **Deploy** (no settings needed).
-3. Your game is live at the link Vercel shows, e.g. `https://naksha-upsc-map-quest.vercel.app`.
+3. Your game is live at the link Vercel shows, e.g. `https://naksha-map-quest.vercel.app` (Vercel names it after the repository).
 
 ## Files
 

@@ -7,6 +7,12 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f5465">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Naksha">
+<meta name="description" content="Daily India map quiz: five places a day, one tap each. Practise national parks, passes, Ramsar sites, dams, history and more.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: one-screen atlas — the survey map fills the left, a field-notebook panel sits right (stacks under the map on phones). */
@@ -298,6 +304,24 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   .prompt .q { font-size: 22px; }
 }
 
+/* ---- growth features ---- */
+.habit { display: flex; gap: 8px; }
+.habit .btn { flex: 1; padding: 10px 12px; font-size: 13px; }
+.overlay { position: fixed; inset: 0; z-index: 30; background: rgb(10 25 30 / .5); display: grid; place-items: center; padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheetcard { width: min(420px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--panel); border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 60px rgb(0 0 0 / .3); }
+.sheetcard img { width: 100%; max-width: 100%; border-radius: 14px; display: block; }
+.sheetcard h3 { font: 800 24px/1.15 var(--f-display); margin: 0; }
+.sheetcard .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.sheetcard label { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 500; }
+.sheetcard input[type=time] { font: 600 16px var(--f-mono); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); }
+.sheetcard .small { font-size: 13px; }
+.sheetcard .linkbtn { align-self: center; }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.chalbox { display: flex; flex-direction: column; gap: 8px; }
+.chalvs { text-align: center; font: 700 16px/1.3 var(--f-body); padding: 10px; border-radius: 12px; background: color-mix(in srgb, var(--brand) 7%, var(--panel)); }
+.chalvs.win { color: var(--good); } .chalvs.lose { color: var(--bad); }
+
 /* ================= Redesign layer ================= */
 :root { --brand: #0f5465; --brand-2: #127186; --saffron: #f29f3d; --card: var(--panel); --shadow: 0 1px 2px rgb(16 40 48 / .06), 0 8px 24px rgb(16 40 48 / .08); --r: 16px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --brand: #2a8aa0; --brand-2: #3aa3ba; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35); } }
@@ -484,6 +508,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
           <textarea class="sharetext" id="shareText" readonly rows="3" hidden aria-label="Result to share"></textarea>
           <p class="dnext" id="rNext"></p>
         </div>
+        <div class="chalbox" id="rChal" hidden>
+          <p class="chalvs" id="rVs" hidden></p>
+          <button type="button" class="btn wide" id="chalBtn">Challenge a friend</button>
+        </div>
         <div class="row">
           <button type="button" class="btn" id="againBtn">Play again</button>
           <button type="button" class="btn ghost" id="missBtn">Practise misses</button>
@@ -513,6 +541,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
           <button type="button" class="btn ghost" id="dShareBtn" hidden>Share</button>
         </div>
         <p class="dnext" id="dNext"></p>
+      </div>
+      <div class="habit">
+        <button type="button" class="btn ghost" id="installBtn" hidden>Install app</button>
+        <button type="button" class="btn ghost" id="remindBtn">Daily reminder</button>
       </div>
       <div class="sechead">
         <h2>Practice</h2>
@@ -579,6 +611,36 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   </aside>
 </main>
 
+<div class="overlay" id="shareSheet" hidden>
+  <div class="sheetcard" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <h3 id="shareTitle">Share your result</h3>
+    <img id="shareImg" alt="Your result card">
+    <p class="lead" id="shareHint">On a phone, long-press the image to save or share it.</p>
+    <div class="row"><a class="btn" id="shareDl" download="naksha-result.png" href="#">Download image</a><button type="button" class="btn ghost" id="shareCopy">Copy text and link</button></div>
+    <textarea class="sharetext" id="shareText2" readonly rows="3" hidden aria-label="Text to share"></textarea>
+    <button type="button" class="linkbtn" id="shareClose">Close</button>
+  </div>
+</div>
+<div class="overlay" id="remindSheet" hidden>
+  <div class="sheetcard" role="dialog" aria-modal="true" aria-labelledby="remindTitle">
+    <h3 id="remindTitle">Never miss a Daily</h3>
+    <p class="lead">A new set of five places arrives every midnight. Pick a time and add a daily reminder.</p>
+    <label for="remindTime">Remind me at <input type="time" id="remindTime" value="20:00"></label>
+    <button type="button" class="btn wide" id="calBtn">Add to my calendar</button>
+    <button type="button" class="btn ghost wide" id="notifyBtn" hidden>Also send a notification on this phone</button>
+    <p class="lead small" id="remindNote"></p>
+    <button type="button" class="linkbtn" id="remindClose">Close</button>
+  </div>
+</div>
+<div class="overlay" id="chalSheet" hidden>
+  <div class="sheetcard" role="dialog" aria-modal="true" aria-labelledby="chalTitle">
+    <div class="eyebrow">Challenge</div>
+    <h3 id="chalTitle">A friend challenged you</h3>
+    <p id="chalText"></p>
+    <button type="button" class="btn wide big" id="chalStart">Accept challenge</button>
+    <button type="button" class="linkbtn" id="chalSkip">Not now</button>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="map-data.js"></script>
 <script src="map-extra.js"></script>
@@ -957,8 +1019,129 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     startGame.deferAsk = true; startGame(dailyItems(), `Daily #${dailyNo()}`); startGame.deferAsk = false;
     game.qs = dailyItems(); game.daily = true; game.custom = true; ask();
   };
-  $("dShareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) share(shareTextFor(rec)); };
-  $("shareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) share(shareTextFor(rec)); };
+
+  // ---------- share card image (drawn on canvas) ----------
+  const CELL = { g: "#5fd38e", y: "#f5d04c", o: "#f59a3c", r: "#ef6b55" };
+  const fToCell = (f) => f >= 0.8 ? "g" : f >= 0.5 ? "y" : f >= 0.2 ? "o" : "r";
+  const EMOJI_CELL = { "🟩": "g", "🟨": "y", "🟧": "o", "🟥": "r" };
+  function rrect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
+  function drawCard({ title, sub, score, max, cells, footer }) {
+    const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#0d4a5a"); g.addColorStop(1, "#13798f"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const rg = x.createRadialGradient(W, 0, 0, W, 0, 760); rg.addColorStop(0, "rgba(242,159,61,.5)"); rg.addColorStop(1, "rgba(242,159,61,0)"); x.fillStyle = rg; x.fillRect(0, 0, W, H);
+    if (window.INDIA_OUTLINE && window.Path2D) { x.save(); const sc = 1.05; x.translate(W - 550 * sc + 60, 300); x.scale(sc, sc); const p = new Path2D(window.INDIA_OUTLINE);
+      x.fillStyle = "rgba(255,255,255,.07)"; x.fill(p); x.lineWidth = 2 / sc; x.strokeStyle = "rgba(255,255,255,.22)"; x.stroke(p); x.restore(); }
+    const disp = (w, px) => `${w} ${px}px "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif`, body = (w, px) => `${w} ${px}px "IBM Plex Sans", system-ui, sans-serif`, mono = (px) => `500 ${px}px "IBM Plex Mono", ui-monospace, monospace`;
+    // logo
+    x.fillStyle = "#fff"; rrect(x, 80, 80, 80, 80, 22); x.fill();
+    x.save(); x.translate(80, 80); x.scale(2.5, 2.5); x.fillStyle = "#0f5465"; x.fill(new Path2D("M16 26s7-6 7-11.5a7 7 0 1 0-14 0C9 20 16 26 16 26z")); x.beginPath(); x.arc(16, 14.5, 2.8, 0, 7); x.fillStyle = "#f29f3d"; x.fill(); x.restore();
+    x.fillStyle = "#fff"; x.font = disp(800, 58); x.fillText("Naksha", 182, 136); x.font = mono(24); x.globalAlpha = .75; x.fillText("INDIA MAP QUEST", 184, 168); x.globalAlpha = 1;
+    // title + score
+    x.font = body(600, 44); x.globalAlpha = .9; x.fillText(title, 80, 330, W - 160); x.globalAlpha = 1;
+    x.font = disp(800, 230); const st = score.toLocaleString("en-IN"); x.fillText(st, 72, 580); const sw = x.measureText(st).width;
+    x.font = disp(600, 60); x.globalAlpha = .7; x.fillText(`/ ${max.toLocaleString("en-IN")}`, 72 + sw + 20, 580); x.globalAlpha = 1;
+    if (sub) { x.font = body(500, 40); x.globalAlpha = .9; x.fillText(sub, 80, 660, W - 160); x.globalAlpha = 1; }
+    // result squares (up to 10 per row)
+    const n = cells.length, per = Math.min(n, n <= 5 ? 5 : 10), gap = n <= 5 ? 26 : 16, size = Math.min(150, (W - 160 - gap * (per - 1)) / per);
+    cells.forEach((k, i) => { const r = Math.floor(i / per), col = i % per; x.fillStyle = CELL[k] || "rgba(255,255,255,.25)"; rrect(x, 80 + col * (size + gap), 740 + r * (size + gap), size, size, size * 0.22); x.fill(); });
+    // footer
+    x.fillStyle = "#fff"; x.font = disp(800, 56); x.fillText(footer || "Can you beat me?", 80, 1200, W - 160);
+    x.font = mono(30); x.globalAlpha = .8; x.fillText(location.host || "naksha", 80, 1256, W - 160); x.globalAlpha = 1;
+    return c;
+  }
+  let shareSheetText = "";
+  async function shareCard(opts, text) {
+    try { await document.fonts?.ready; } catch { /* fonts optional */ }
+    const canvas = drawCard(opts);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    const file = blob && typeof File === "function" ? new File([blob], "naksha-result.png", { type: "image/png" }) : null;
+    try { if (file && navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text }); return; } }
+    catch (e) { if (e?.name === "AbortError") return; }
+    shareSheetText = text;
+    const url = blob ? URL.createObjectURL(blob) : canvas.toDataURL("image/png");
+    $("shareImg").src = url; $("shareDl").href = url; $("shareText2").hidden = true; $("shareSheet").hidden = false; $("shareCopy").focus();
+  }
+  $("shareCopy").onclick = async () => { try { await navigator.clipboard.writeText(shareSheetText); toast("Copied. Paste it next to the image."); }
+    catch { const t = $("shareText2"); t.hidden = false; t.value = shareSheetText; t.focus(); t.select(); } };
+  $("shareClose").onclick = () => { $("shareSheet").hidden = true; };
+  function shareDaily(rec) {
+    const date = new Date(Date.now() + IST).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+    const st = dailyStreak();
+    shareCard({ title: `Daily #${rec.n} · ${date}`, score: rec.score, max: 1000, cells: Array.from(rec.grid).map((e) => EMOJI_CELL[e]), sub: st > 1 ? `🔥 ${st}-day streak` : "Today's 5 places", footer: "Can you beat me?" }, shareTextFor(rec));
+  }
+  $("dShareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) shareDaily(rec); };
+  $("shareBtn").onclick = () => { const rec = dailyLog()[todayKey()]; if (rec) shareDaily(rec); };
+
+  // ---------- challenge a friend: a link that replays the same places ----------
+  const fnv = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36).padStart(5, "0").slice(-5); };
+  const CODE = new Map(), BYCODE = new Map();
+  for (const it of ITEMS) { const c = fnv(it.id); CODE.set(it.id, c); BYCODE.set(c, it); }
+  const MODE_NAME = { pin: "Pin it", clue: "Clue hunt", spot: "Spot it" };
+  function challengeLink() {
+    return `${location.href.split("#")[0]}#c-${({ pin: "p", clue: "c", spot: "s" })[mode]}${tough ? "t" : "n"}-${game.score}-${game.qs.map((q) => CODE.get(q.id)).join("-")}`;
+  }
+  $("chalBtn").onclick = () => {
+    const r = game.results, n = r.length, max = n * 1000, link = challengeLink();
+    const ds = r.filter((x) => x.d != null).map((x) => x.d), avg = ds.length ? Math.round(ds.reduce((a, b) => a + b, 0) / ds.length) : null;
+    const text = `I scored ${game.score.toLocaleString("en-IN")}/${max.toLocaleString("en-IN")} on Naksha (${MODE_NAME[mode]}${tough ? ", Tough" : ""}). Same ${n} places, same rules. Can you beat me?\n${link}`;
+    shareCard({ title: `${MODE_NAME[mode]}${tough ? " · Tough" : ""} · ${n} places`, score: game.score, max, cells: r.map((x) => fToCell(x.f ?? (x.ok ? 1 : 0))),
+      sub: `${r.filter((x) => x.ok).length}/${n} correct${avg != null ? ` · avg miss ${avg} km` : ""}`, footer: "Can you beat me?" }, text);
+  };
+  let pendingChallenge = null;
+  function readChallenge() {
+    const m = location.hash.match(/^#c-([pcs])([tn])-(\d+)-([a-z0-9-]+)$/); if (!m) return;
+    const items = m[4].split("-").map((c) => BYCODE.get(c)).filter(Boolean); if (!items.length) return;
+    pendingChallenge = { mode: { p: "pin", c: "clue", s: "spot" }[m[1]], tough: m[2] === "t", score: +m[3], items };
+    $("chalText").textContent = `${MODE_NAME[pendingChallenge.mode]}${pendingChallenge.tough ? " · Tough" : ""} · ${items.length} places. Your friend scored ${(+m[3]).toLocaleString("en-IN")} out of ${(items.length * 1000).toLocaleString("en-IN")}. You get the same places and the same rules.`;
+    $("chalSheet").hidden = false; $("chalStart").focus();
+  }
+  const clearHash = () => { try { history.replaceState(null, "", location.pathname + location.search); } catch { /* ignore */ } };
+  $("chalSkip").onclick = () => { $("chalSheet").hidden = true; pendingChallenge = null; clearHash(); };
+  $("chalStart").onclick = () => {
+    const ch = pendingChallenge; if (!ch) return; $("chalSheet").hidden = true; clearHash();
+    mode = ch.mode; tough = ch.tough;
+    startGame.deferAsk = true; startGame(ch.items, "Friend's challenge"); startGame.deferAsk = false;
+    game.qs = ch.items.slice(); game.custom = true; game.challenge = { score: ch.score }; ask();
+  };
+
+  // ---------- install as an app, daily reminder ----------
+  let deferredInstall = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; if (!standalone) $("installBtn").hidden = false; });
+  if (isIOS && !standalone) $("installBtn").hidden = false;
+  $("installBtn").onclick = async () => {
+    if (deferredInstall) { deferredInstall.prompt(); const r = await deferredInstall.userChoice.catch(() => null); deferredInstall = null; if (r?.outcome === "accepted") { $("installBtn").hidden = true; toast("Installed. Find Naksha on your home screen."); } }
+    else if (isIOS) toast("In Safari, tap Share, then 'Add to Home Screen'.");
+    else toast("Open your browser menu and choose 'Install app' or 'Add to Home screen'.");
+  };
+  let swReg = null;
+  try { if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").then((r) => { swReg = r; }).catch(() => {}); } catch { /* not allowed here */ }
+  const canNotify = () => "Notification" in window && "serviceWorker" in navigator && "PeriodicSyncManager" in window;
+  $("remindBtn").onclick = () => { $("remindTime").value = store.get("remindAt", "20:00"); $("notifyBtn").hidden = !canNotify(); $("remindNote").textContent = ""; $("remindSheet").hidden = false; $("calBtn").focus(); };
+  $("remindClose").onclick = () => { $("remindSheet").hidden = true; };
+  $("calBtn").onclick = () => {
+    const t = $("remindTime").value || "20:00"; store.set("remindAt", t);
+    const [hh, mm] = t.split(":"), d = new Date(), pad = (v) => String(v).padStart(2, "0");
+    const day = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`, stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const url = location.href.split("#")[0];
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Naksha//Daily 5//EN", "BEGIN:VEVENT", `UID:naksha-daily-${Date.now()}@naksha`, `DTSTAMP:${stamp}`,
+      `DTSTART:${day}T${hh}${mm}00`, "DURATION:PT5M", "RRULE:FREQ=DAILY", "SUMMARY:Naksha · Today's 5", `DESCRIPTION:Five new places. Keep your streak going: ${url}`, `URL:${url}`,
+      "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", "DESCRIPTION:Play today's 5 on Naksha", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" })); a.download = "naksha-daily-reminder.ics";
+    document.body.appendChild(a); a.click(); a.remove();
+    $("remindNote").textContent = `Opening a calendar event at ${t} every day. If nothing opens, this page can't save files here; open the game from your own website link and try again.`;
+  };
+  $("notifyBtn").onclick = async () => {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { $("remindNote").textContent = "Notifications are blocked. Allow them in your browser's site settings to use this."; return; }
+      const reg = swReg || await navigator.serviceWorker.ready;
+      await reg.periodicSync.register("daily-5", { minInterval: 12 * 3600e3 });
+      $("remindNote").textContent = "Done. Your phone will nudge you about once a day when a new Daily is ready (Chrome picks the exact time).";
+    } catch { $("remindNote").textContent = "This works once Naksha is installed as an app. Install it first, then try again, or use the calendar reminder."; }
+  };
+
   setInterval(() => { if (!views.home.hidden) renderDaily(); }, 30000);
 
   // ---------- game ----------
@@ -1282,7 +1465,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       sfx.fanfare(game.score / 1000);
       return showDailyResult(rec);
     }
-    $("rDaily").hidden = $("rGrid").hidden = true; $("rStars").hidden = false; $("againBtn").hidden = false;
+    $("rDaily").hidden = $("rGrid").hidden = true; $("rStars").hidden = false; $("againBtn").hidden = false; $("rChal").hidden = false;
     $("rL1").textContent = "Correct"; $("rL3").textContent = "Best"; $("changeBtn").textContent = "Change topic";
     stopTimer(); clearMarks(); clearStateClasses();
     const r = game.results, n = r.length, correct = r.filter((x) => x.ok).length;
@@ -1303,6 +1486,13 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
     $("rBest").textContent = best[key] ? best[key].toLocaleString("en-IN") : "—";
     $("missBtn").disabled = correct === n;
+    const vs = $("rVs"); vs.hidden = !game.challenge; vs.className = "chalvs";
+    if (game.challenge) {
+      const cs = game.challenge.score, me = game.score;
+      vs.textContent = me > cs ? `You ${me.toLocaleString("en-IN")} · Friend ${cs.toLocaleString("en-IN")}. You win! 🎉` : me === cs ? `It's a tie at ${me.toLocaleString("en-IN")}.` : `You ${me.toLocaleString("en-IN")} · Friend ${cs.toLocaleString("en-IN")}. So close.`;
+      vs.classList.add(me >= cs ? "win" : "lose");
+      $("chalBtn").textContent = me > cs ? "Send it back: challenge them" : "Challenge someone else";
+    } else $("chalBtn").textContent = "Challenge a friend";
     const ul = $("review"); ul.replaceChildren();
     r.forEach((x) => {
       const li = document.createElement("li");
@@ -1321,7 +1511,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     const res = rec.items.map(([id, d, pts]) => ({ q: byId[id], d, pts })).filter((x) => x.q);
     game = { qs: res.map((x) => x.q), i: 5, score: rec.score, streak: 0, daily: true, custom: true, pool: res.map((x) => x.q), topicLabel: `Daily #${rec.n}`,
       results: res.map((x) => ({ ...x, ok: x.d != null && x.d < 150 })) };
-    $("rTopic").textContent = `Naksha Daily #${rec.n}`;
+    $("rTopic").textContent = `Naksha Daily #${rec.n}`; $("rChal").hidden = true;
     $("rStars").hidden = true; $("rGrid").hidden = false; $("rGrid").textContent = rec.grid;
     $("rScore").textContent = rec.score; $("rNote").textContent = "out of 1,000";
     $("rRing").style.setProperty("--p", (rec.score / 1000).toFixed(3));
@@ -1330,7 +1520,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
     const all = Object.values(dailyLog());
     $("rL3").textContent = "Days played"; $("rBest").textContent = all.length;
-    $("rDaily").hidden = false; $("shareText").hidden = true;
+    $("rDaily").hidden = false; $("shareText").hidden = true; $("shareBtn").textContent = "Share result card";
     $("rNext").textContent = `Next Daily in ${fmtLeft(msToNext())} (midnight IST)`;
     $("againBtn").hidden = true; $("missBtn").disabled = game.results.every((x) => x.ok); $("changeBtn").textContent = "Practice more";
     const ul = $("review"); ul.replaceChildren();
@@ -1396,9 +1586,11 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         $("lFact").textContent = "Two UTs since 31 October 2019 (J&K Reorganisation Act). This map shows them together, including PoK, Gilgit-Baltistan and Aksai Chin as per India's official map."; } }
   }
 
+  addEventListener("keydown", (e) => { if (e.key === "Escape") for (const id of ["shareSheet", "remindSheet"]) $(id).hidden = true; });
   // ---------- boot ----------
   document.body.dataset.view = "home";
   renderHome(); previewTopic(); applyView();
+  readChallenge();
   requestAnimationFrame(applyView);
 })();
 </script>

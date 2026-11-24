@@ -6,6 +6,15 @@ An India map quiz game for competitive-exam map questions. It's a plain static s
 
 Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each; the last three are indirect clues. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
 
+## Sharing, challenges and the app
+
+- **Share result card**: after the Daily (or any practice game) the game draws a 1080×1350 result image with your score, coloured squares and streak. On phones it opens the share menu (WhatsApp, Telegram, Instagram…); elsewhere it shows the image to download plus text to copy.
+- **Challenge a friend**: after a practice game, *Challenge a friend* shares a link that replays exactly the same places with the same mode and level. When the friend finishes they see *You vs Friend* and can send a challenge back. Nothing is stored on a server; the places and score are in the link.
+- **Install as an app**: the site is a PWA (`manifest.webmanifest`, `sw.js`, icons). *Install app* adds it to the home screen, and it works offline after the first visit.
+- **Daily reminder**: *Daily reminder* adds a repeating calendar event at the time you pick. On Android Chrome, once installed, it can also show a daily notification (the browser chooses the exact time).
+
+These need the game to be served from your own site (e.g. Vercel); inside an embedded preview, sharing and installing are blocked and the game falls back to showing the image and copy buttons.
+
 ## Sound and animation
 
 After you tap, a dashed flight path draws from your pin to the real place with a running km counter, then the answer marker pops in and your points count up. Sound effects are generated in the browser (no audio files); use the 🔊 button in the header to mute them.

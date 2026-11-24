@@ -297,11 +297,111 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   h1 { font-size: 24px; }
   .prompt .q { font-size: 22px; }
 }
+
+/* ================= Redesign layer ================= */
+:root { --brand: #0f5465; --brand-2: #127186; --saffron: #f29f3d; --card: var(--panel); --shadow: 0 1px 2px rgb(16 40 48 / .06), 0 8px 24px rgb(16 40 48 / .08); --r: 16px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --brand: #2a8aa0; --brand-2: #3aa3ba; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35); } }
+:root[data-theme="dark"] { --brand: #2a8aa0; --brand-2: #3aa3ba; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35); }
+
+.bar { padding-block: 10px; box-shadow: 0 1px 0 var(--line); border-bottom: 0; position: relative; z-index: 5; }
+.brand { align-items: center; gap: 10px; }
+.brand .logo { width: 32px; height: 32px; display: block; flex: none; }
+.brand .logo svg { width: 100%; height: 100%; display: block; }
+.brand b { font-size: 21px; }
+.brand .tag { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.soundbtn { border-radius: 12px; }
+
+.btn { border-radius: 14px; padding: 13px 20px; font-weight: 600; box-shadow: 0 1px 0 rgb(255 255 255 / .15) inset, 0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent); transition: transform .12s, box-shadow .12s, filter .12s; }
+.btn:hover:not(:disabled) { filter: brightness(1.06); }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+.btn.ghost { box-shadow: none; }
+.btn.big { padding: 16px 22px; font-size: 16px; }
+
+.view { gap: 20px; }
+.sechead h2 { margin-bottom: 4px; }
+h2 { font-size: 11px; letter-spacing: 0.14em; }
+
+/* daily hero */
+.daily { border-radius: 22px; padding: 18px; gap: 10px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--saffron) 35%, transparent), transparent 55%), linear-gradient(140deg, var(--brand), var(--brand-2)); color: #fff; }
+.daily::after { content: ""; position: absolute; right: -30px; bottom: -40px; width: 160px; height: 160px; border-radius: 50%; border: 18px solid rgb(255 255 255 / .06); pointer-events: none; }
+.daily .dtitle { font-size: 32px; }
+.daily .btn { background: #fff; color: var(--brand); box-shadow: 0 6px 18px rgb(0 0 0 / .18); }
+.daily .btn.ghost { background: transparent; color: #fff; border: 1px solid rgb(255 255 255 / .45); box-shadow: none; }
+.daily .streak { background: rgb(255 255 255 / .16); }
+.dpips { display: flex; gap: 8px; }
+.dpips span { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; font: 600 11px/1 var(--f-mono); opacity: .9; }
+.dpips i { width: 100%; height: 8px; border-radius: 99px; background: rgb(255 255 255 / .22); }
+.dpips span:nth-child(n+3) i { background: rgb(255 255 255 / .32); }
+.dpips .g i { background: #5fd38e; } .dpips .y i { background: #f5d04c; } .dpips .o i { background: #f59a3c; } .dpips .r i { background: #ef6b55; }
+
+/* mode tiles */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode { display: grid; grid-template-columns: 36px 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 1px; align-items: center; text-align: left;
+  padding: 12px; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--card); transition: border-color .15s, background .15s, transform .12s; }
+.mode:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); }
+.mode:active { transform: scale(.985); }
+.mode svg { grid-row: span 2; width: 36px; height: 36px; padding: 7px; border-radius: 11px; fill: none; stroke: var(--brand); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  background: color-mix(in srgb, var(--brand) 10%, transparent); }
+.mode b { font-size: 15px; } .mode small { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.mode[aria-pressed="true"] { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--card)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent); }
+.mode[aria-pressed="true"] svg { background: var(--brand); stroke: #fff; }
+.modehelp { margin-top: 8px; }
+
+/* topic cards */
+.topics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.topic { grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 4px; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card); align-items: start; height: 100%; }
+.topic .ic { text-align: left; font-size: 20px; }
+.topic .nm { font-weight: 600; font-size: 14px; line-height: 1.25; }
+.topic .meta { text-align: left; font-size: 11px; }
+.topic[aria-pressed="true"] { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--card)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent); }
+
+/* settings as segmented controls */
+.settings { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: var(--r); background: color-mix(in srgb, var(--brand) 5%, var(--card)); border: 1px solid var(--line); }
+.settings .row { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 10px; }
+.settings .row h2 { margin: 0; }
+.settings .chips { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.settings .chip { border: 0; border-radius: 9px; padding: 7px 6px; text-align: center; }
+.settings .chip[aria-pressed="true"] { background: var(--brand); color: #fff; }
+.settings .lvhelp { grid-column: 1 / -1; }
+.startbar { position: sticky; bottom: 0; padding-block: 8px calc(8px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--panel) 70%, transparent); z-index: 2; }
+
+/* play overlays */
+.qcard, .sheet, .mcard { border-radius: 20px; box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--line) 70%, transparent); }
+.qcard { padding: 12px 18px 12px; }
+.rpips { display: flex; gap: 5px; justify-content: center; padding: 8px 0 2px; }
+.rpips i { width: 18px; height: 6px; border-radius: 99px; background: var(--line); transition: background .3s, width .3s; }
+.rpips i.now { background: var(--brand); width: 28px; }
+.rpips i.g { background: var(--good); } .rpips i.y { background: #e5b62c; } .rpips i.o { background: var(--pin); } .rpips i.r { background: var(--bad); }
+.timer { display: none !important; }
+.clock { --p: 1; position: relative; width: 40px; height: 40px; min-width: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; font-size: 14px;
+  background: conic-gradient(var(--brand) calc(var(--p) * 360deg), var(--line) 0); color: var(--ink); }
+.clock::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--panel); }
+.clock { isolation: isolate; } .clock::before { z-index: -1; }
+.clock.low { background: conic-gradient(var(--bad) calc(var(--p) * 360deg), var(--line) 0); color: var(--bad); }
+#confirmBtn { border-radius: 999px; padding-inline: 26px; }
+.sheet { padding: 14px; }
+.verdict { align-items: center; }
+.verdict b { font-size: 26px; }
+.verdict span { font: 800 26px/1 var(--f-display); color: var(--ink); }
+.pbar { height: 12px; }
+.factcard { border-radius: 14px; background: color-mix(in srgb, var(--brand) 7%, var(--card)); border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent); }
+.factcard .where::before { content: "Did you know · "; color: var(--brand); font-weight: 600; }
+.mapctl button { border-radius: 12px; box-shadow: var(--shadow); border-color: transparent; }
+
+/* summary */
+.ring { --p: 0; width: 168px; height: 168px; margin: 6px auto 2px; border-radius: 50%; display: grid; place-content: center; text-align: center; position: relative; isolation: isolate;
+  background: conic-gradient(var(--good) calc(var(--p) * 360deg), var(--line) 0); }
+.ring::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--panel); z-index: -1; }
+.ring .bigscore { font-size: 44px; } .ring .lead { font-size: 12px; }
+.summary div { border-radius: 14px; background: color-mix(in srgb, var(--brand) 5%, var(--card)); }
+@media (max-width: 860px) { .startbar { margin-inline: -4px; } }
+@media (prefers-reduced-motion: reduce) { .btn, .mode, .rpips i { transition: none; } }
 </style>
 </head>
 <body>
 <header class="bar">
-  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><b>Naksha</b><span>India Map Quest</span></button>
+  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="var(--brand)"/><path d="M16 26s7-6 7-11.5a7 7 0 1 0-14 0C9 20 16 26 16 26z" fill="#fff"/><circle cx="16" cy="14.5" r="2.8" fill="var(--saffron)"/></svg></span><b>Naksha</b><span class="tag">India Map Quest</span></button>
   <button type="button" class="soundbtn" id="soundBtn" aria-pressed="true" aria-label="Sound on">🔊</button>
   <div class="stats" id="stats" hidden>
     <div class="stat"><small>Round</small><b id="sRound">1/10</b></div>
@@ -341,7 +441,8 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <div class="q" id="pQ"></div>
         <div class="sub" id="pSub"></div>
         <div class="timer" id="timerWrap" hidden><i id="timerBar"></i></div>
-        <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
+        <div class="progress" aria-hidden="true" hidden><i id="prog" style="width:0%"></i></div>
+        <div class="rpips" id="rPips" aria-hidden="true"></div>
       </div>
       <div class="sheet" id="sheet">
         <div class="options" id="options" hidden></div>
@@ -371,8 +472,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
           <h2 id="rTopic"></h2>
           <div class="stars" id="rStars"></div>
           <div class="dgrid big" id="rGrid" hidden></div>
-          <div class="bigscore" id="rScore">0</div>
-          <p class="lead" id="rNote"></p>
+          <div class="ring" id="rRing"><div class="bigscore" id="rScore">0</div><p class="lead" id="rNote"></p></div>
         </div>
         <div class="summary">
           <div><small id="rL1">Correct</small><b id="rCorrect"></b></div>
@@ -404,6 +504,9 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <div class="dtop"><span id="dLabel">Daily</span><span class="streak" id="dStreak" title="Days in a row">🔥 0</span></div>
         <div class="dtitle">Today's 5</div>
         <p id="dText">Five places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
+        <div class="dpips" id="dPips" aria-label="Five rounds worth 100 to 300 points">
+          <span data-k="0"><i></i>100</span><span data-k="1"><i></i>150</span><span data-k="2"><i></i>200</span><span data-k="3"><i></i>250</span><span data-k="4"><i></i>300</span>
+        </div>
         <div class="dgrid" id="dGrid" hidden></div>
         <div class="drow">
           <button type="button" class="btn" id="dailyBtn">Play today's 5</button>
@@ -411,17 +514,16 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         </div>
         <p class="dnext" id="dNext"></p>
       </div>
-      <div>
+      <div class="sechead">
         <h2>Practice</h2>
-        <p class="lead">Exam-style map questions on national parks, passes, Ramsar sites, dams, Harappan sites, ports and more, each with a key fact to remember.</p>
+        <p class="lead">Exam-style map questions on parks, passes, Ramsar sites, dams, history and ports, each with a key fact to remember.</p>
       </div>
       <div>
-        <h2>Mode</h2>
-        <div class="seg" role="group" aria-label="Game mode">
-          <button type="button" data-mode="pin" aria-pressed="true">Pin it</button>
-          <button type="button" data-mode="clue" aria-pressed="false">Clue hunt</button>
-          <button type="button" data-mode="spot" aria-pressed="false">Spot it</button>
-          <button type="button" data-mode="learn" aria-pressed="false">Revise</button>
+        <div class="modes" role="group" aria-label="Game mode">
+          <button type="button" class="mode" data-mode="pin" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg><b>Pin it</b><small>Name given, you pin it</small></button>
+          <button type="button" class="mode" data-mode="clue" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/><path d="M8.6 8.4a2.2 2.2 0 1 1 2.9 2.1c-.6.2-1 .7-1 1.3v.4"/><circle cx="10.5" cy="14.6" r=".4"/></svg><b>Clue hunt</b><small>Indirect clue, you pin it</small></button>
+          <button type="button" class="mode" data-mode="spot" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg><b>Spot it</b><small>Marked place, pick a name</small></button>
+          <button type="button" class="mode" data-mode="learn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c3-1.4 6-1.4 9 0v14c-3-1.4-6-1.4-9 0z"/><path d="M21 5.5c-3-1.4-6-1.4-9 0v14c3-1.4 6-1.4 9 0z"/></svg><b>Revise</b><small>Browse every place</small></button>
         </div>
         <p class="modehelp" id="modeHelp"></p>
       </div>
@@ -429,6 +531,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
         <h2>Topic</h2>
         <div class="topics" id="topics"></div>
       </div>
+      <div class="settings">
       <div class="row" id="roundsRow">
         <h2 style="margin:0">Rounds</h2>
         <div class="chips" role="group" aria-label="Number of rounds">
@@ -453,7 +556,8 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
           <button type="button" class="chip" data-t="15" aria-pressed="false">15 s</button>
         </div>
       </div>
-      <button type="button" class="btn wide" id="startBtn">Start</button>
+      </div>
+      <div class="startbar"><button type="button" class="btn wide big" id="startBtn">Start</button></div>
       <p class="credit">Map: state boundaries from <a href="https://github.com/datameet/maps" target="_blank" rel="noopener">DataMeet India community</a> (CC BY 4.0), drawn as per the Survey of India outline. Locations are approximate.</p>
     </div>
 
@@ -834,7 +938,9 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     const rec = dailyLog()[todayKey()];
     $("dLabel").textContent = `Daily #${dailyNo()} · ${new Date(Date.now() + IST).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}`;
     $("dStreak").textContent = `🔥 ${dailyStreak()}`;
-    $("dGrid").hidden = $("dShareBtn").hidden = !rec;
+    $("dGrid").hidden = true; $("dShareBtn").hidden = !rec;
+    const cls = { "🟩": "g", "🟨": "y", "🟧": "o", "🟥": "r" }, cells = rec ? Array.from(rec.grid) : [];
+    document.querySelectorAll("#dPips span").forEach((el, k) => { el.className = cls[cells[k]] || ""; });
     if (rec) {
       $("dText").textContent = `You scored ${rec.score}/1000 today.`;
       $("dGrid").textContent = rec.grid; $("dailyBtn").textContent = "See today's result";
@@ -871,6 +977,10 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     $("sScore").textContent = game.score.toLocaleString("en-IN");
     $("sStreak").textContent = game.streak;
     $("prog").style.width = (game.i / game.qs.length * 100) + "%";
+    const rp = $("rPips");
+    if (rp.childElementCount !== game.qs.length) { rp.replaceChildren(); for (let k = 0; k < game.qs.length; k++) rp.appendChild(document.createElement("i")); }
+    [...rp.children].forEach((el, k) => { const r = game.results[k];
+      el.className = r ? (r.f >= 0.8 ? "g" : r.f >= 0.5 ? "y" : r.f >= 0.2 ? "o" : "r") : k === game.i ? "now" : ""; });
   }
   // keep revealed answers clear of the bottom sheet
   const flyToPlay = (x, y, w) => flyTo(x, y + (w * H / W) * 0.14, w);
@@ -886,6 +996,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
       const left = Math.max(0, end - performance.now());
       $("timerBar").style.width = (left / (timeLimit * 10)) + "%";
       const sec = Math.ceil(left / 1000);
+      clock.style.setProperty("--p", (left / (timeLimit * 1000)).toFixed(3));
       if (sec !== +clock.textContent && sec <= 5 && sec > 0) sfx.tick();
       clock.textContent = sec;
       clock.classList.toggle("low", left < 5000);
@@ -1186,6 +1297,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     $("rStars").setAttribute("aria-label", `${frac >= 0.8 ? 3 : frac >= 0.5 ? 2 : frac >= 0.2 ? 1 : 0} of 3 stars`);
     $("rTopic").textContent = `${game.topicLabel} · ${({ pin: "Pin it", clue: "Clue hunt", spot: "Spot it" })[mode]}${tough ? " · Tough" : ""}`;
     $("rScore").textContent = game.score.toLocaleString("en-IN");
+    $("rRing").style.setProperty("--p", (game.score / (n * 1000)).toFixed(3));
     $("rNote").textContent = `out of ${(n * 1000).toLocaleString("en-IN")}` + (isTopicRun && game.score > prevBest && prevBest && n >= 10 ? " · new best!" : "");
     $("rCorrect").textContent = `${correct}/${n}`;
     $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";
@@ -1212,6 +1324,7 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
     $("rTopic").textContent = `Naksha Daily #${rec.n}`;
     $("rStars").hidden = true; $("rGrid").hidden = false; $("rGrid").textContent = rec.grid;
     $("rScore").textContent = rec.score; $("rNote").textContent = "out of 1,000";
+    $("rRing").style.setProperty("--p", (rec.score / 1000).toFixed(3));
     $("rL1").textContent = "Streak"; $("rCorrect").textContent = `🔥 ${dailyStreak()}`;
     const ds = res.filter((x) => x.d != null).map((x) => x.d);
     $("rAvg").textContent = ds.length ? `${Math.round(ds.reduce((a, b) => a + b, 0) / ds.length)} km` : "—";

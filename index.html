@@ -388,7 +388,7 @@ body.asking .area-labels { display: none; }
 #map.sat.close:not(.statepick) #gStates .state.colored:not(.target):not(.wrong):not(.picked):not(.hint) { stroke: transparent; }
 #map.sat.close:not(.statepick) .india-outline { opacity: 0; }
 .img-credit { position: absolute; left: 50%; transform: translateX(-50%); bottom: 10px; font-size: 10px; color: rgba(255,255,255,.8); background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 999px; pointer-events: none; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
-body.playing .img-credit { bottom: auto; top: 8px; }
+.img-credit { font-size: 9px; padding: 2px 7px; }
 
 /* ---- growth features ---- */
 .habit { display: flex; gap: 8px; }
@@ -588,7 +588,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       <button type="button" id="globeBtn" aria-label="Switch to flat map" title="Globe / flat map">🌐</button>
     </div>
     <div class="coords" id="coords">23.44°N · 82.50°E</div>
-    <div class="img-credit" id="imgCredit" hidden>Imagery: Sentinel-2 cloudless by EOX (CC BY 4.0) · Copernicus Sentinel data 2016</div>
+    <div class="img-credit" id="imgCredit" hidden>Sentinel-2 cloudless – s2maps.eu by EOX (CC BY 4.0), Copernicus data 2016</div>
     <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Labels &amp; guide lines</label>
 
     <!-- PLAY: overlays on the full-screen map -->
@@ -1064,40 +1064,58 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     gl.uniform1f(SAT.u.uDetOn, detOn ? 1 : 0);
     if (detOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, TILES.tex); gl.uniform1i(SAT.u.uDet, 1);
       const b = TILES.bounds; gl.uniform4f(SAT.u.uDetB, b[0], b[1], b[2], b[3]); gl.activeTexture(gl.TEXTURE0); }
-    $("imgCredit").hidden = !(detOn && TILES.loaded > 0);
+    const cr = $("imgCredit"); cr.hidden = !(detOn && TILES.loaded > 0);
+    if (!cr.hidden) { const sh = $("sheet"), mr = svg.getBoundingClientRect();
+      const top = document.body.classList.contains("playing") && sh && !sh.hidden && !views.play.hidden ? sh.getBoundingClientRect().top : mr.bottom;
+      cr.style.bottom = Math.max(8, mr.bottom - top + 8) + "px"; }
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     if (GL.k > 2.2 && !SAT.big && !SAT.loadingBig && gl.getParameter(gl.MAX_TEXTURE_SIZE) >= 4096) {
       SAT.loadingBig = true; satTexture("earth-4k.jpg").then(() => { SAT.big = true; satRender(); }).catch(() => {}); }
   }
   // ---- sharp close-ups: Sentinel-2 cloudless satellite tiles (EOX, CC BY 4.0), fetched for the current view only ----
   const TILES = { url: window.NAKSHA_TILES || "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg",
-    minK: 2.6, maxZ: 14, cache: new Map(), tex: null, bounds: null, key: "", loaded: 0, canvas: null, gen: 0, failures: 0, upT: 0 };
+    minK: 1.6, maxZ: 14, cache: new Map(), tex: null, bounds: null, key: "", loaded: 0, canvas: null, gen: 0, failures: 0, upT: 0 };
+  function tileImg(z, x, y, cb) {
+    const k = `${z}/${x}/${y}`, hit = TILES.cache.get(k);
+    if (hit?.complete && hit.naturalWidth) { cb(hit); return; }
+    const img = hit || new Image();
+    if (!hit) { img.crossOrigin = "anonymous"; img.src = TILES.url.replace("{z}", z).replace("{x}", x).replace("{y}", y); TILES.cache.set(k, img);
+      if (TILES.cache.size > 500) TILES.cache.delete(TILES.cache.keys().next().value); }
+    img.addEventListener("load", () => { TILES.failures = 0; cb(img); }, { once: true });
+    img.addEventListener("error", () => { TILES.failures++; TILES.cache.delete(k); }, { once: true });
+  }
   function tilesUpdate() {
     if (!SAT.ok || !GL.on || GL.k < TILES.minK || TILES.failures > 12) return;
     // visible lon/lat box from a grid of screen points
     const pts = []; for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) { const ll = GL.proj.invert([GL.cw * i / 8, GL.ch * j / 8]); if (ll && isFinite(ll[0]) && globeVisible(ll)) pts.push(ll); }
     if (pts.length < 6) return;
     const c0 = -GL.rot[0]; const lons = pts.map((p) => { let d = p[0] - c0; while (d > 180) d -= 360; while (d < -180) d += 360; return c0 + d; });
-    let lo0 = Math.min(...lons), lo1 = Math.max(...lons), la0 = Math.max(-84, Math.min(...pts.map((p) => p[1]))), la1 = Math.min(84, Math.max(...pts.map((p) => p[1])));
-    if (lo1 - lo0 > 160) return;
+    const lo0 = Math.min(...lons), lo1 = Math.max(...lons), la0 = Math.max(-84, Math.min(...pts.map((p) => p[1]))), la1 = Math.min(84, Math.max(...pts.map((p) => p[1])));
+    if (lo1 - lo0 > 170 || lo0 < -180 || lo1 > 180) return;
+    const gl = SAT.gl, maxTex = SAT.maxTex || (SAT.maxTex = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE)));
     const dpr = Math.min(2, window.devicePixelRatio || 1), pxPerDeg = GL.R * GL.k * Math.PI / 180 * dpr;
-    let z = Math.max(3, Math.min(TILES.maxZ, Math.ceil(Math.log2(pxPerDeg * 360 / 256))));
+    let z = Math.max(2, Math.min(TILES.maxZ, Math.ceil(Math.log2(pxPerDeg * 360 / 256))));
     const mx = (lon) => (lon + 180) / 360, my = (lat) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(Math.PI / 4 + r / 2)) / Math.PI) / 2; };
     let x0, x1, y0, y1, n;
-    for (;; z--) { n = 2 ** z; x0 = Math.floor(mx(lo0) * n); x1 = Math.floor(mx(lo1) * n); y0 = Math.max(0, Math.floor(my(la1) * n)); y1 = Math.min(n - 1, Math.floor(my(la0) * n));
-      if ((x1 - x0 + 1) * (y1 - y0 + 1) <= 64 || z <= 3) break; }
+    for (;; z--) { n = 2 ** z; x0 = Math.floor(mx(lo0) * n); x1 = Math.min(n - 1, Math.floor(mx(lo1) * n)); y0 = Math.max(0, Math.floor(my(la1) * n)); y1 = Math.min(n - 1, Math.floor(my(la0) * n));
+      const nx = x1 - x0 + 1, ny = y1 - y0 + 1; if ((nx * ny <= 64 && nx * 256 <= maxTex && ny * 256 <= maxTex) || z <= 2) break; }
     const key = `${z}/${x0}/${x1}/${y0}/${y1}`; if (key === TILES.key) return;
     TILES.key = key; const gen = ++TILES.gen, nx = x1 - x0 + 1, ny = y1 - y0 + 1;
     const cv = document.createElement("canvas"); cv.width = nx * 256; cv.height = ny * 256; const cx = cv.getContext("2d");
-    TILES.pending = { cv, bounds: [x0 / n, y0 / n, (x1 + 1) / n, (y1 + 1) / n] }; TILES.loaded = 0;
-    for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
-      const wx = ((tx % n) + n) % n, k = `${z}/${wx}/${ty}`;
-      const draw = (img) => { TILES.failures = 0; if (gen !== TILES.gen) return; cx.drawImage(img, (tx - x0) * 256, (ty - y0) * 256, 256, 256); TILES.loaded++; tilesUpload(); };
-      const hit = TILES.cache.get(k); if (hit?.complete && hit.naturalWidth) { draw(hit); continue; }
-      const img = hit || new Image(); if (!hit) { img.crossOrigin = "anonymous"; img.src = TILES.url.replace("{z}", z).replace("{x}", wx).replace("{y}", ty); TILES.cache.set(k, img);
-        if (TILES.cache.size > 400) TILES.cache.delete(TILES.cache.keys().next().value); }
-      img.addEventListener("load", () => draw(img), { once: true }); img.addEventListener("error", () => { TILES.failures++; TILES.cache.delete(k); }, { once: true });
-    }
+    const nb = [x0 / n, y0 / n, (x1 + 1) / n, (y1 + 1) / n], prev = TILES.pending;
+    // 1) keep what is already on screen: copy the previous mosaic into its new position
+    if (prev?.any) { const ob = prev.bounds, W2 = cv.width, H2 = cv.height;
+      try { cx.drawImage(prev.cv, (ob[0] - nb[0]) / (nb[2] - nb[0]) * W2, (ob[1] - nb[1]) / (nb[3] - nb[1]) * H2, (ob[2] - ob[0]) / (nb[2] - nb[0]) * W2, (ob[3] - ob[1]) / (nb[3] - nb[1]) * H2); } catch { /* ignore */ } }
+    const P = TILES.pending = { cv, bounds: nb, any: !!prev?.any };
+    if (P.any) tilesUpload();
+    // 2) coarse tiles of the same imagery go *behind*, filling any gap quickly
+    const pz = Math.max(1, z - 2), f = 2 ** (z - pz);
+    for (let px = Math.floor(x0 / f); px <= Math.floor(x1 / f); px++) for (let py = Math.floor(y0 / f); py <= Math.floor(y1 / f); py++)
+      tileImg(pz, px, py, (img) => { if (gen !== TILES.gen) return; cx.globalCompositeOperation = "destination-over";
+        cx.drawImage(img, (px * f - x0) * 256, (py * f - y0) * 256, 256 * f, 256 * f); cx.globalCompositeOperation = "source-over"; P.any = true; TILES.loaded++; tilesUpload(); });
+    // 3) sharp tiles on top
+    for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++)
+      tileImg(z, tx, ty, (img) => { if (gen !== TILES.gen) return; cx.drawImage(img, (tx - x0) * 256, (ty - y0) * 256, 256, 256); P.any = true; TILES.loaded++; tilesUpload(); });
   }
   function tilesUpload() {
     clearTimeout(TILES.upT); TILES.upT = setTimeout(() => {

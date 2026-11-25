@@ -318,13 +318,28 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
 #wGuide text { fill: var(--guide); font-family: var(--f-mono); }
 #wOcean.off, #wGuide.textoff text { display: none; }
 .area-labels text { fill: var(--muted); font-family: var(--f-body); font-weight: 600; paint-order: stroke; stroke: var(--land); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; text-anchor: middle; }
-.area-labels text.off { display: none; }
+.area-labels text.off, .area-labels text.dup { display: none; }
 body.asking .area-labels { display: none; }
 .ocean-label { fill: var(--sea-ink); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.3em; text-anchor: middle; pointer-events: none; }
 #wWater .river { opacity: .7; }
 .regions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--brand) 6%, var(--panel)); border: 1px solid var(--line); }
 .regions button { border: 0; background: none; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 15px; display: flex; gap: 8px; align-items: center; justify-content: center; }
 .regions button[aria-pressed="true"] { background: var(--panel); color: var(--brand); box-shadow: var(--shadow); }
+
+/* ---- 3D globe ---- */
+:root { --atmo: #7fc4dc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --atmo: #2f7f9b; } }
+:root[data-theme="dark"] { --atmo: #2f7f9b; }
+.g-ocean { fill: url(#oceanGrad); }
+.g-atmo { fill: none; stroke: var(--atmo); stroke-width: 18; opacity: .45; filter: url(#glowBlur); pointer-events: none; }
+.g-grat { fill: none; stroke: var(--sea-line); stroke-width: 0.6; opacity: .7; pointer-events: none; }
+.g-guide { fill: none; stroke: var(--guide); stroke-width: 0.9; stroke-dasharray: 4 4; opacity: .6; pointer-events: none; }
+.g-shade { fill: url(#shadeGrad); pointer-events: none; }
+#map.globe { cursor: grab; }
+#map.globe:active { cursor: grabbing; }
+#map.globe.crosshair { cursor: crosshair; }
+#globeBtn { font-size: 17px; }
+#globeBtn[aria-pressed="true"] { background: var(--brand); color: #fff; }
 
 /* ---- growth features ---- */
 .habit { display: flex; gap: 8px; }
@@ -484,14 +499,33 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         <g id="wOcean"></g>
         <g id="wLabels" class="area-labels"></g>
       </g>
+      <g id="layerGlobe" style="display: none">
+        <defs>
+          <radialGradient id="oceanGrad" cx="40%" cy="35%" r="70%"><stop offset="0" style="stop-color: var(--sea)"></stop><stop offset="1" style="stop-color: var(--sea-deep)"></stop></radialGradient>
+          <radialGradient id="shadeGrad" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity="0.16"></stop><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop><stop offset="1" stop-color="#05212b" stop-opacity="0.38"></stop></radialGradient>
+          <filter id="glowBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"></feGaussianBlur></filter>
+        </defs>
+        <path id="gAtmo" class="g-atmo"></path>
+        <path id="gOcean" class="g-ocean"></path>
+        <path id="gGrat" class="g-grat"></path>
+        <path id="gHalo" class="coast-halo"></path>
+        <g id="gCountries"></g>
+        <path id="gLakes" class="lake"></path>
+        <path id="gIndia" class="india-outline"></path>
+        <path id="gGuide" class="g-guide"></path>
+        <path id="gShade" class="g-shade"></path>
+        <g id="gLabels" class="area-labels"></g>
+      </g>
       <g id="dots"></g>
       <g id="marks"></g>
+      <g id="gMirror"></g>
     </svg>
     <div class="maptip" id="maptip" hidden></div>
     <div class="mapctl">
       <button type="button" id="zin" aria-label="Zoom in">+</button>
       <button type="button" id="zout" aria-label="Zoom out">−</button>
-      <button type="button" id="zreset" aria-label="Show all of India">⤢</button>
+      <button type="button" id="zreset" aria-label="Show the whole map">⤢</button>
+      <button type="button" id="globeBtn" aria-label="Switch to flat map" title="Globe / flat map" hidden>🌐</button>
     </div>
     <div class="coords" id="coords">23.44°N · 82.50°E</div>
     <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Labels &amp; guide lines</label>
@@ -798,6 +832,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     areaLabels.push({ el: t, region: "india", minppu: small ? 4.5 : 1.25 });
   }
   // ---- world layer ----
+  const flatPath = {};
   if (window.WORLD) {
     const Wd = window.WORLD;
     // globe outline (Equal Earth sphere)
@@ -817,7 +852,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     for (const c of Wd.countries) {
       const isIndia = c.n === "India";
       const p = svgEl("path", { d: c.d, class: "state country", "data-state": c.n }, $("wCountries"));
-      statePaths[c.n] = p; if (isIndia) $("wIndia").setAttribute("d", c.d);
+      statePaths[c.n] = p; flatPath[c.n] = p; if (isIndia) $("wIndia").setAttribute("d", c.d);
       if (c.n !== "Antarctica") {
         const t = svgEl("text", { x: c.lx, y: c.ly, "data-fs": c.bw > 60 ? 11 : 9.5 }, $("wLabels")); t.textContent = c.n;
         areaLabels.push({ el: t, region: "world", minppu: Math.max(0.6, Math.min(40, (c.n.length * 6.5) / Math.max(c.bw, 0.5))) });
@@ -833,13 +868,118 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       const [x, y] = WLD.proj(la, lo); const t = svgEl("text", { x, y, class: "ocean-label", "data-fs": 11 }, $("wOcean")); t.textContent = txt;
     }
   }
+  // ---------- 3D globe (World map) ----------
+  const GL = { on: false, want: store.get("globe", true), ready: false, loading: null, rot: [-40, -15, 0], k: 1, R: 260, cw: 800, ch: 600,
+    proj: null, path: null, byName: {}, byNameLo: {}, els: {}, labels: [], raf: 0, idleT: 0, anim: 0, mirrorRaf: 0 };
+  const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
+  function globeLoad() {
+    if (GL.loading) return GL.loading;
+    GL.loading = (async () => {
+      if (!window.d3?.geoOrthographic) { await loadScript("vendor/d3-array.min.js"); await loadScript("vendor/d3-geo.min.js"); }
+      if (!window.topojson) await loadScript("vendor/topojson-client.min.js");
+      if (!window.GLOBE_DATA) await loadScript("globe-data.js");
+      const D = window.GLOBE_DATA, first = (t) => Object.values(t.objects)[0];
+      const group = (fc) => { const m = {}; for (const f of fc.features) (m[f.properties.n] ||= []).push(f); for (const k in m) m[k] = { type: "FeatureCollection", features: m[k] }; return m; };
+      GL.byName = group(topojson.feature(D.hi, first(D.hi))); GL.byNameLo = group(topojson.feature(D.lo, first(D.lo)));
+      GL.land = topojson.merge(D.hi, first(D.hi).geometries); GL.landLo = topojson.merge(D.lo, first(D.lo).geometries);
+      GL.lakes = topojson.feature(D.lakes, first(D.lakes));
+      GL.grat = d3.geoGraticule().step([30, 30])();
+      GL.guide = { type: "MultiLineString", coordinates: [0, 23.44, -23.44, 66.56, -66.56].map((la) => d3.range(-180, 181, 3).map((lo) => [lo, la])) };
+      GL.proj = d3.geoOrthographic().clipAngle(90).precision(0.5); GL.path = d3.geoPath(GL.proj);
+      const gC = $("gCountries");
+      for (const n of Object.keys(GL.byName)) { const el = svgEl("path", { class: "state country", "data-state": n }, gC); GL.els[n] = el; }
+      for (const c of window.WORLD?.countries || []) { if (c.n === "Antarctica") continue; const [la, lo] = WLD.unproj(c.lx, c.ly);
+        const t = svgEl("text", {}, $("gLabels")); t.textContent = c.n; GL.labels.push({ el: t, ll: [lo, la], deg: c.bw / WLD.W * 360, len: c.n.length, big: c.bw > 60 }); }
+      GL.ready = true;
+    })().catch(() => { GL.loading = null; });
+    return GL.loading;
+  }
+  const globeVisible = (ll) => d3.geoDistance(ll, [-GL.rot[0], -GL.rot[1]]) < Math.PI / 2 - 0.015;
+  function globeSize() { const r = svg.getBoundingClientRect(); GL.cw = r.width || 800; GL.ch = r.height || 600; GL.R = Math.min(GL.cw, GL.ch) * 0.43; }
+  async function globeEnable() {
+    await globeLoad(); if (!GL.ready || REG !== "world" || GL.on) return;
+    GL.on = true; globeSize();
+    for (const n in GL.els) statePaths[n] = GL.els[n];
+    $("layerWorld").style.display = "none"; $("layerGlobe").style.display = ""; gMarks.style.display = "none"; gDots.style.display = "none";
+    svg.classList.add("globe"); $("globeBtn").setAttribute("aria-pressed", "true"); $("globeBtn").setAttribute("aria-label", "Switch to flat map");
+    applyView(); globeRender("hi");
+  }
+  function globeDisable() {
+    $("globeBtn").setAttribute("aria-pressed", "false"); $("globeBtn").setAttribute("aria-label", "Switch to 3D globe");
+    if (!GL.on) return; GL.on = false;
+    for (const n in GL.els) if (flatPath[n]) statePaths[n] = flatPath[n];
+    $("layerGlobe").style.display = "none"; $("layerWorld").style.display = REG === "world" ? "" : "none"; gMarks.style.display = ""; gDots.style.display = "";
+    $("gMirror").replaceChildren(); svg.classList.remove("globe");
+  }
+  function globeRender(quality) {
+    if (!GL.on || !GL.ready) return;
+    const hi = quality === "hi"; globeSize();
+    GL.proj.rotate(GL.rot).scale(GL.R * GL.k).translate([GL.cw / 2, GL.ch / 2]);
+    const P = GL.path, sphere = P({ type: "Sphere" });
+    for (const id of ["gOcean", "gAtmo", "gShade"]) $(id).setAttribute("d", sphere);
+    $("gGrat").setAttribute("d", P(GL.grat) || ""); $("gGuide").setAttribute("d", P(GL.guide) || "");
+    $("gHalo").setAttribute("d", P(hi ? GL.land : GL.landLo) || "");
+    for (const n in GL.els) GL.els[n].setAttribute("d", P(hi || !GL.byNameLo[n] ? GL.byName[n] : GL.byNameLo[n]) || "");
+    $("gIndia").setAttribute("d", P(hi ? GL.byName.India : (GL.byNameLo.India || GL.byName.India)) || "");
+    $("gLakes").setAttribute("d", hi ? (P(GL.lakes) || "") : "");
+    const pxPerDeg = GL.R * GL.k * Math.PI / 180;
+    for (const l of GL.labels) {
+      const show = l.deg * pxPerDeg > l.len * 6.5 && globeVisible(l.ll); l.el.classList.toggle("off", !show); if (!show) continue;
+      const [x, y] = GL.proj(l.ll); l.el.setAttribute("x", x); l.el.setAttribute("y", y); l.el.setAttribute("font-size", l.big ? 12.5 : 11); l.el.style.strokeWidth = 3;
+    }
+    syncMirror();
+  }
+  function globeKick() {
+    if (!GL.on) return;
+    cancelAnimationFrame(GL.raf); GL.raf = requestAnimationFrame(() => globeRender("lo"));
+    clearTimeout(GL.idleT); GL.idleT = setTimeout(() => globeRender("hi"), 180);
+  }
+  function globeFlyTo(ll, k) {
+    cancelAnimationFrame(GL.anim);
+    const from = { l: GL.rot[0], p: GL.rot[1], k: GL.k };
+    let tl = ll ? -ll[0] : from.l, tp = ll ? Math.max(-80, Math.min(80, -ll[1])) : from.p;
+    while (tl - from.l > 180) tl -= 360; while (tl - from.l < -180) tl += 360;
+    if (reduceMotion) { GL.rot = [tl, tp, 0]; GL.k = k; globeKick(); return; }
+    const t0 = performance.now(), dur = 700;
+    const step = (t) => { const q = Math.min(1, (t - t0) / dur), e = q < .5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+      GL.rot = [from.l + (tl - from.l) * e, from.p + (tp - from.p) * e, 0]; GL.k = from.k + (k - from.k) * e;
+      globeRender("lo"); if (q < 1) GL.anim = requestAnimationFrame(step); else globeKick(); };
+    GL.anim = requestAnimationFrame(step);
+  }
+  // mirror the game's markers (kept in flat-map coordinates) onto the globe
+  const toLL = (x, y) => { const [la, lo] = WLD.unproj(x, y); return [lo, la]; };
+  function syncMirror() {
+    const out = $("gMirror"); out.replaceChildren(); if (!GL.on || !GL.ready) return;
+    for (const src of [...gDots.children, ...gMarks.children]) {
+      const tag = src.tagName.toLowerCase();
+      if (tag === "circle") { const ll = toLL(+src.getAttribute("cx"), +src.getAttribute("cy")); if (!globeVisible(ll)) continue;
+        const [x, y] = GL.proj(ll), c = src.cloneNode(true); c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", src.dataset.r || src.getAttribute("r")); out.appendChild(c); }
+      else if (tag === "text") { const ax = src.dataset.ax != null ? +src.dataset.ax : +src.getAttribute("x"), ay = src.dataset.ay != null ? +src.dataset.ay : +src.getAttribute("y");
+        const ll = toLL(ax, ay); if (!globeVisible(ll)) continue; const [x, y] = GL.proj(ll), c = src.cloneNode(true);
+        c.setAttribute("x", x + (+src.dataset.dx || 0)); c.setAttribute("y", y + (+src.dataset.dy || 0)); c.setAttribute("font-size", (+src.dataset.fs || 12) * 1.15); c.style.strokeWidth = 3; out.appendChild(c); }
+      else if (tag === "path" || tag === "line") {
+        let a, b; if (tag === "line") { a = [+src.getAttribute("x1"), +src.getAttribute("y1")]; b = [+src.getAttribute("x2"), +src.getAttribute("y2")]; }
+        else { const n = (src.getAttribute("d") || "").match(/-?\d+(\.\d+)?/g); if (!n || n.length < 4) continue; a = [+n[0], +n[1]]; b = [+n[n.length - 2], +n[n.length - 1]]; }
+        const ip = d3.geoInterpolate(toLL(...a), toLL(...b)), pts = d3.range(0, 1.0001, 1 / 40).map(ip);
+        const c = svgEl("path", { class: src.getAttribute("class") || "", d: GL.path({ type: "LineString", coordinates: pts }) || "" }); out.appendChild(c); }
+    }
+  }
+  const mo = new MutationObserver(() => { if (!GL.on) return; cancelAnimationFrame(GL.mirrorRaf); GL.mirrorRaf = requestAnimationFrame(syncMirror); });
+  mo.observe(gMarks, { childList: true, subtree: true, attributes: true }); mo.observe(gDots, { childList: true, subtree: true, attributes: true });
+  $("globeBtn").onclick = () => { GL.want = !GL.want; store.set("globe", GL.want); if (REG === "world") { if (GL.want) globeEnable(); else { globeDisable(); applyView(); } } };
+  addEventListener("resize", () => { if (GL.on) globeKick(); });
+  setTimeout(() => { if (GL.want) globeLoad(); }, 1500);
+  window.__nakshaGlobe = GL; // read-only hook for automated tests
+
   function setRegion(r) {
     if (r === REG && svg.dataset.region === r) return;
     REG = r; const P = r === "world" ? WLD : IND; W = P.W; H = P.H; proj = P.proj; unproj = P.unproj;
     svg.dataset.region = r; svg.classList.toggle("world", r === "world");
     $("layerIndia").style.display = r === "india" ? "" : "none"; $("layerWorld").style.display = r === "world" ? "" : "none";
     const g = $("seaGrad"); g.setAttribute("cx", W / 2); g.setAttribute("cy", H * 0.48); g.setAttribute("r", Math.max(W, H) * 0.85);
-    cancelAnimationFrame(anim); vb = { x: 0, y: 0, w: W, h: H }; applyView();
+    cancelAnimationFrame(anim); vb = { x: 0, y: 0, w: W, h: H };
+    if (r === "world" && GL.want) globeEnable(); else globeDisable();
+    $("globeBtn").hidden = r !== "world"; applyView();
   }
   // graticule every 5°
   const gGrid = $("grid");
@@ -880,19 +1020,24 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   for (const [txt, lat, lon] of [["ARABIAN SEA", 15.5, 69.2], ["BAY OF BENGAL", 15.5, 85.6], ["INDIAN OCEAN", 6.4, 75.2]]) {
     const [x, y] = proj(lat, lon); const t = svgEl("text", { x, y, class: "sea-label", "data-fs": 10 }, gSea); t.textContent = txt;
   }
-  $("guideToggle").addEventListener("change", (e) => { for (const id of ["guide", "relief", "seaLabels", "stateLabels", "wGuide", "wLabels", "wOcean"]) $(id).style.display = e.target.checked ? "" : "none";
+  $("guideToggle").addEventListener("change", (e) => { for (const id of ["guide", "relief", "seaLabels", "stateLabels", "wGuide", "wLabels", "wOcean", "gLabels", "gGuide"]) $(id).style.display = e.target.checked ? "" : "none";
     document.querySelectorAll(".nb-label").forEach((t) => t.style.display = e.target.checked ? "" : "none"); });
 
   // ---------- pan & zoom ----------
   let vb = { x: 0, y: 0, w: W, h: H };
-  const ppu = () => { const r = svg.getBoundingClientRect(); return Math.min(r.width / vb.w, r.height / vb.h) || 1; };
-  const toMap = (cx, cy) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 }; };
+  const ppu = () => { if (GL.on) return 1; const r = svg.getBoundingClientRect(); return Math.min(r.width / vb.w, r.height / vb.h) || 1; };
+  const toMap = (cx, cy) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); const q = m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
+    if (!GL.on) return q;
+    const ll = GL.proj.invert([q.x, q.y]); if (!ll || !isFinite(ll[0]) || !globeVisible(ll)) return { x: NaN, y: NaN };
+    const [x, y] = WLD.proj(ll[1], ll[0]); return { x, y }; };
   function clampVb() {
     vb.w = Math.min(Math.max(vb.w, (REG === "world" ? WLD : IND).minW), W * 1.4); vb.h = vb.w * H / W;
     vb.x = Math.min(Math.max(vb.x, -vb.w / 2), W - vb.w / 2);
     vb.y = Math.min(Math.max(vb.y, -vb.h / 2), H - vb.h / 2);
   }
   function applyView() {
+    if (GL.on) { const r = svg.getBoundingClientRect(); svg.setAttribute("viewBox", `0 0 ${r.width || 800} ${r.height || 600}`);
+      svg.querySelectorAll("[data-r]").forEach((e) => e.setAttribute("r", e.dataset.r)); globeKick(); return; }
     clampVb();
     svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
     const pp0 = ppu(), u = 1 / pp0; // map units per screen pixel
@@ -906,6 +1051,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
   }
   function zoomAt(f, cx, cy) {
+    if (GL.on) { GL.k = Math.min(60, Math.max(0.85, GL.k / f)); globeKick(); return; }
     const p = toMap(cx, cy); const nw = Math.min(Math.max(vb.w * f, (REG === "world" ? WLD : IND).minW), W * 1.4); const k = nw / vb.w;
     vb.x = p.x - (p.x - vb.x) * k; vb.y = p.y - (p.y - vb.y) * k; vb.w = nw; vb.h = nw * H / W; applyView();
   }
@@ -913,6 +1059,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   let anim = 0;
   function flyTo(x, y, w) {
     cancelAnimationFrame(anim);
+    if (GL.on) { const deg = w / WLD.W * 360, k = Math.min(40, Math.max(1, 150 / deg));
+      if (w >= W * 0.9) return globeFlyTo(null, 1); const [la, lo] = WLD.unproj(x, y); return globeFlyTo([lo, la], k); }
     const to = { w, h: w * H / W }; to.x = x - to.w / 2; to.y = y - to.h / 2;
     if (reduceMotion) { vb = to; applyView(); return; }
     const from = { ...vb }, t0 = performance.now(), dur = 550;
@@ -944,8 +1092,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) }; moved = true; }
   });
   svg.addEventListener("pointermove", (e) => {
-    const m = toMap(e.clientX, e.clientY); const [lat, lon] = unproj(m.x, m.y);
-    $("coords").textContent = fmtCoord(lat, lon);
+    const m = toMap(e.clientX, e.clientY);
+    if (isFinite(m.x)) { const [lat, lon] = unproj(m.x, m.y); $("coords").textContent = fmtCoord(lat, lon); }
     if (!pointers.has(e.pointerId)) return;
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -955,7 +1103,9 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     }
     if (pointers.size === 1 && down) {
       if (!moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) return;
-      moved = true; const u = 1 / ppu();
+      moved = true;
+      if (GL.on) { const sc = 180 / (Math.PI * GL.R * GL.k); GL.rot[0] += (e.clientX - prev.x) * sc; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] - (e.clientY - prev.y) * sc)); globeKick(); return; }
+      const u = 1 / ppu();
       vb.x -= (e.clientX - prev.x) * u; vb.y -= (e.clientY - prev.y) * u; applyView();
     }
   });
@@ -972,10 +1122,14 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   addEventListener("resize", applyView);
 
   // ---------- markers ----------
-  function clearMarks() { gMarks.replaceChildren(); }
+  let answerLabel = null;   // map name label to hide while an answer label shows the same name
+  function clearMarks() { gMarks.replaceChildren(); answerLabel = null; refreshAreaLabels(); }
+  function refreshAreaLabels() { for (const l of areaLabels) if (l.region === REG) l.el.classList.toggle("dup", l.el.textContent === answerLabel);
+    for (const l of GL.labels) l.el.classList.toggle("dup", l.el.textContent === answerLabel); }
   function clearStateClasses() { for (const p of Object.values(statePaths)) p.classList.remove("target", "wrong", "hint", "picked"); }
   function circle(x, y, r, cls, parent = gMarks) { return svgEl("circle", { cx: x, cy: y, "data-r": r, r, class: cls }, parent); }
   function label(x, y, text, parent = gMarks) {
+    answerLabel = text; refreshAreaLabels();
     const t = svgEl("text", { "data-ax": x, "data-ay": y, "data-dx": 10, "data-dy": 4, "data-fs": 12, x, y, class: "m-label" }, parent);
     t.textContent = text; return t;
   }
@@ -1355,11 +1509,11 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         $("pQ").innerHTML = clueHtml(q);
       } else $("pQ").textContent = q.name;
       $("pSub").textContent = game.daily ? (clue ? "Which place is this? One tap answers." : "One tap answers. Zoom first if you need to.")
-        : clue ? (q.isState ? "Tap the state or UT this describes, then confirm." : "Pin the place this describes, then confirm.")
-        : q.isState ? "Tap this state or UT, then confirm." : "Drop your pin on the map, then confirm.";
+        : clue ? (q.isState ? `Tap the ${q.region === "world" ? "country" : "state or UT"} this describes, then confirm.` : "Pin the place this describes, then confirm.")
+        : q.isState ? `Tap this ${q.region === "world" ? "country" : "state or UT"}, then confirm.` : "Drop your pin on the map, then confirm.";
       playReset();
     } else {
-      $("pQ").textContent = q.isState ? "Which state or UT is shaded?" : "Which place is marked?";
+      $("pQ").textContent = q.isState ? (q.region === "world" ? "Which country is shaded?" : "Which state or UT is shaded?") : "Which place is marked?";
       $("pSub").textContent = "Pick one answer · keys 1–4";
       if (q.isState) {
         statePaths[q.name]?.classList.add("target");
@@ -1405,6 +1559,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   };
 
   function onMapTap(x, y, target) {
+    if (!isFinite(x) && !target?.dataset?.id) return;
     if (views.learn.hidden === false) return learnTap(target);
     if (!game || views.play.hidden || game.cur.done || !pinLike()) return;
     const q = game.cur.q;
@@ -1456,7 +1611,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   }
   // km from a tapped point to the nearest edge of a state (0 if inside it)
   function kmToState(name, x, y) {
-    const p = statePaths[name]; if (!p) return 0;
+    const p = (REG === "world" && flatPath[name]) || statePaths[name]; if (!p) return 0;
     const [la, lo] = unproj(x, y); const L = p.getTotalLength(); let best = Infinity;
     for (let i = 0; i <= 600; i++) { const pt = p.getPointAtLength(L * i / 600); const [a, b] = unproj(pt.x, pt.y); best = Math.min(best, haversine(la, lo, a, b)); }
     return best;
@@ -1528,7 +1683,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, zw(160))));
     record(q, ok, pts, err); sfx.land(sc.f);
     const tapped = !picked ? "You picked the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You picked Jammu & Kashmir / Ladakh." : `You picked ${esc(picked)}.`;
-    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state: full points." : `${tapped} The shaded one is ${esc(q.name)}. ${scoreLine(err, sc, "Your tap was off by")}`);
+    feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? `Right ${q.region === "world" ? "country" : "state"}: full points.` : `${tapped} The shaded one is ${esc(q.name)}. ${scoreLine(err, sc, "Your tap was off by")}`);
   }
   function answerSpot(o, btn) {
     if (game.cur.done) return;

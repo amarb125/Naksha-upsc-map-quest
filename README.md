@@ -10,6 +10,10 @@ World topics: **Countries of the World** (tap the country; 196 countries with ca
 
 Map details: coastline halos, state and country names that appear as you zoom in (hidden while a question is open), graticule with the Tropics, Equator and polar circles, and ocean labels.
 
+## 3D globe
+
+The World map opens as a **3D globe** (orthographic projection, with ocean shading and an atmosphere glow). Drag to spin it, scroll or pinch to zoom, and tap to answer as usual; answer arcs follow great circles. The 🌐 button switches between the globe and the flat Equal Earth map. The India map stays flat. The globe's libraries (d3-geo, topojson-client, in `vendor/`) and data (`globe-data.js`) load only the first time the World map is opened.
+
 ## Daily 5
 
 Every day at midnight IST there is a new set of five places, the same for everyone. One tap answers each; the last three are indirect clues. Places are worth 100, 150, 200, 250 and 300 points (1,000 for a perfect day). The result shows a row of coloured squares you can share, and the start screen keeps your daily streak.
@@ -68,6 +72,8 @@ Then visit http://localhost:8000.
 
 - `places.js` — the question bank. Add a place as `[name, lat, lon, state, fact]`.
 - `world-data.js` — world countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), projected to Equal Earth; India replaced by the DataMeet outline.
+- `globe-data.js` — countries and lakes as TopoJSON (lon/lat) for the 3D globe, at two detail levels (low while spinning, high when still).
+- `vendor/` — d3-array, d3-geo and topojson-client (ISC licence).
 - `world-places.js` — the world question bank and the capitals/facts for the countries quiz.
 - `map-extra.js` — neighbouring countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), simplified.
 - `map-data.js` — simplified state outlines from the [DataMeet India community maps](https://github.com/datameet/maps) (CC BY 4.0), following the Survey of India outline. Jammu & Kashmir and Ladakh are drawn as one shape (the source predates 2019).

@@ -1,6 +1,6 @@
 // Naksha service worker: works offline and shows the daily reminder notification.
-const CACHE = "naksha-v1";
-const SHELL = ["./", "index.html", "map-data.js", "map-extra.js", "places.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+const CACHE = "naksha-v2";
+const SHELL = ["./", "index.html", "map-data.js", "map-extra.js", "places.js", "world-data.js", "world-places.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -1,6 +1,14 @@
-# Naksha — India Map Quest
+# Naksha — Map Quest (India & World)
 
 An India map quiz game for competitive-exam map questions. It's a plain static site (HTML + JS) that needs no server, build step or API key.
+
+## India and World
+
+Switch between **India** and **World** on the start screen. The World map uses the Equal Earth projection with country borders, rivers and lakes; India is always drawn with the Survey of India outline.
+
+World topics: **Countries of the World** (tap the country; 196 countries with capitals), Straits, Canals & Chokepoints; Seas, Gulfs & Lakes; Mountains, Volcanoes & Deserts; Rivers, Dams & Waterfalls; Islands & Archipelagos; and Places in the News. The Daily alternates India and World places.
+
+Map details: coastline halos, state and country names that appear as you zoom in (hidden while a question is open), graticule with the Tropics, Equator and polar circles, and ocean labels.
 
 ## Daily 5
 
@@ -59,6 +67,8 @@ Then visit http://localhost:8000.
 ## Files
 
 - `places.js` — the question bank. Add a place as `[name, lat, lon, state, fact]`.
+- `world-data.js` — world countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), projected to Equal Earth; India replaced by the DataMeet outline.
+- `world-places.js` — the world question bank and the capitals/facts for the countries quiz.
 - `map-extra.js` — neighbouring countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), simplified.
 - `map-data.js` — simplified state outlines from the [DataMeet India community maps](https://github.com/datameet/maps) (CC BY 4.0), following the Survey of India outline. Jammu & Kashmir and Ladakh are drawn as one shape (the source predates 2019).
 - `index.html` — the game: map drawing, pan/zoom, scoring and all three modes.

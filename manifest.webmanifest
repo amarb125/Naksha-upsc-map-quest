@@ -1,7 +1,7 @@
 {
-  "name": "Naksha — India Map Quest",
+  "name": "Naksha — Map Quest",
   "short_name": "Naksha",
-  "description": "Daily India map quiz: five places a day, one tap each.",
+  "description": "Daily map quiz for India and the world: five places a day, one tap each.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

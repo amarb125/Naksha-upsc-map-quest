@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Naksha India Map Quest</title>
+<title>Naksha Map Quest</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Naksha">
-<meta name="description" content="Daily India map quiz: five places a day, one tap each. Practise national parks, passes, Ramsar sites, dams, history and more.">
+<meta name="description" content="Daily map quiz for India and the world: five places a day, one tap each. Practise parks, passes, Ramsar sites, straits, countries and more.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: one-screen atlas — the survey map fills the left, a field-notebook panel sits right (stacks under the map on phones). */
@@ -304,6 +304,28 @@ body.playing .panel, body.playing .coords, body.playing .guidetoggle { display: 
   .prompt .q { font-size: 22px; }
 }
 
+/* ---- world + refined map ---- */
+:root { --sea-deep: #a7c8d5; --halo: #e3f0f4; --void: #eef1ee; --sea-ink: #5f8796; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sea-deep: #0a161b; --halo: #1d3642; --void: #0c1519; --sea-ink: #6e98a6; } }
+:root[data-theme="dark"] { --sea-deep: #0a161b; --halo: #1d3642; --void: #0c1519; --sea-ink: #6e98a6; }
+.coast-halo { fill: none; stroke: var(--halo); stroke-width: 7; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.w-sphere { fill: url(#seaGrad); stroke: var(--sea-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+#map.world .seabg { fill: var(--void); }
+.state.country { stroke-width: 0.6; }
+#map.world .india-outline { stroke-width: 1.1; }
+#wGrid .gl { fill: none; stroke: var(--sea-line); stroke-width: 0.6; vector-effect: non-scaling-stroke; opacity: .7; }
+#wGuide .gl { fill: none; stroke: var(--guide); stroke-width: 0.8; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; opacity: .65; }
+#wGuide text { fill: var(--guide); font-family: var(--f-mono); }
+#wOcean.off, #wGuide.textoff text { display: none; }
+.area-labels text { fill: var(--muted); font-family: var(--f-body); font-weight: 600; paint-order: stroke; stroke: var(--land); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; text-anchor: middle; }
+.area-labels text.off { display: none; }
+body.asking .area-labels { display: none; }
+.ocean-label { fill: var(--sea-ink); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.3em; text-anchor: middle; pointer-events: none; }
+#wWater .river { opacity: .7; }
+.regions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--brand) 6%, var(--panel)); border: 1px solid var(--line); }
+.regions button { border: 0; background: none; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 15px; display: flex; gap: 8px; align-items: center; justify-content: center; }
+.regions button[aria-pressed="true"] { background: var(--panel); color: var(--brand); box-shadow: var(--shadow); }
+
 /* ---- growth features ---- */
 .habit { display: flex; gap: 8px; }
 .habit .btn { flex: 1; padding: 10px 12px; font-size: 13px; }
@@ -425,7 +447,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
 </head>
 <body>
 <header class="bar">
-  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="var(--brand)"/><path d="M16 26s7-6 7-11.5a7 7 0 1 0-14 0C9 20 16 26 16 26z" fill="#fff"/><circle cx="16" cy="14.5" r="2.8" fill="var(--saffron)"/></svg></span><b>Naksha</b><span class="tag">India Map Quest</span></button>
+  <button class="brand" id="homeBtn" type="button" aria-label="Back to start"><span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="var(--brand)"/><path d="M16 26s7-6 7-11.5a7 7 0 1 0-14 0C9 20 16 26 16 26z" fill="#fff"/><circle cx="16" cy="14.5" r="2.8" fill="var(--saffron)"/></svg></span><b>Naksha</b><span class="tag">Map Quest · India &amp; World</span></button>
   <button type="button" class="soundbtn" id="soundBtn" aria-pressed="true" aria-label="Sound on">🔊</button>
   <div class="stats" id="stats" hidden>
     <div class="stat"><small>Round</small><b id="sRound">1/10</b></div>
@@ -437,15 +459,31 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
 <main class="app">
   <section class="mapwrap" aria-label="Map of India">
     <svg id="map" viewBox="0 0 550 628" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outline map of India with state boundaries">
-      <rect x="-2000" y="-2000" width="5000" height="5000" fill="var(--sea)"></rect>
-      <g class="grid" id="grid"></g>
-      <g id="neighbours"></g>
-      <g id="seaLabels"></g>
-      <g id="states"></g>
-      <g id="water"></g>
-      <path id="outline" class="india-outline"></path>
-      <g id="relief"></g>
-      <g class="guide" id="guide"></g>
+      <defs><radialGradient id="seaGrad" gradientUnits="userSpaceOnUse" cx="275" cy="300" r="520"><stop offset="0" style="stop-color: var(--sea)"></stop><stop offset="1" style="stop-color: var(--sea-deep)"></stop></radialGradient></defs>
+      <rect class="seabg" x="-4000" y="-4000" width="10000" height="10000" fill="url(#seaGrad)"></rect>
+      <g id="layerIndia">
+        <g class="grid" id="grid"></g>
+        <path id="coastHalo" class="coast-halo"></path>
+        <g id="neighbours"></g>
+        <g id="seaLabels"></g>
+        <g id="states"></g>
+        <g id="water"></g>
+        <path id="outline" class="india-outline"></path>
+        <g id="relief"></g>
+        <g id="stateLabels" class="area-labels"></g>
+        <g class="guide" id="guide"></g>
+      </g>
+      <g id="layerWorld" style="display: none">
+        <path id="wSphere" class="w-sphere"></path>
+        <g class="grid" id="wGrid"></g>
+        <path id="wHalo" class="coast-halo"></path>
+        <g id="wCountries"></g>
+        <g id="wWater"></g>
+        <path id="wIndia" class="india-outline"></path>
+        <g class="guide" id="wGuide"></g>
+        <g id="wOcean"></g>
+        <g id="wLabels" class="area-labels"></g>
+      </g>
       <g id="dots"></g>
       <g id="marks"></g>
     </svg>
@@ -531,7 +569,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       <div class="daily" id="dailyCard">
         <div class="dtop"><span id="dLabel">Daily</span><span class="streak" id="dStreak" title="Days in a row">🔥 0</span></div>
         <div class="dtitle">Today's 5</div>
-        <p id="dText">Five places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
+        <p id="dText">Five places from India and the world, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.</p>
         <div class="dpips" id="dPips" aria-label="Five rounds worth 100 to 300 points">
           <span data-k="0"><i></i>100</span><span data-k="1"><i></i>150</span><span data-k="2"><i></i>200</span><span data-k="3"><i></i>250</span><span data-k="4"><i></i>300</span>
         </div>
@@ -545,6 +583,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       <div class="habit">
         <button type="button" class="btn ghost" id="installBtn" hidden>Install app</button>
         <button type="button" class="btn ghost" id="remindBtn">Daily reminder</button>
+      </div>
+      <div class="regions" role="group" aria-label="Map">
+        <button type="button" data-region="india" aria-pressed="true"><span aria-hidden="true">🇮🇳</span> India</button>
+        <button type="button" data-region="world" aria-pressed="false"><span aria-hidden="true">🌍</span> World</button>
       </div>
       <div class="sechead">
         <h2>Practice</h2>
@@ -644,14 +686,27 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="map-data.js"></script>
 <script src="map-extra.js"></script>
+<script src="world-data.js"></script>
+<script src="world-places.js"></script>
 <script src="places.js"></script>
 <script>
 (() => {
   "use strict";
-  // ---------- projection (must match map-data.js) ----------
-  const W = 550, H = 628, K = 20, C = Math.cos(22 * Math.PI / 180), LON0 = 68, LAT0 = 37.6;
-  const proj = (lat, lon) => [(lon - LON0) * K * C, (LAT0 - lat) * K];
-  const unproj = (x, y) => [LAT0 - y / K, x / (K * C) + LON0];
+  // ---------- projections: India (must match map-data.js) and World (Equal Earth, must match world-data.js) ----------
+  const IND = (() => { const K = 20, C = Math.cos(22 * Math.PI / 180), LON0 = 68, LAT0 = 37.6;
+    return { W: 550, H: 628, minW: 24, proj: (lat, lon) => [(lon - LON0) * K * C, (LAT0 - lat) * K], unproj: (x, y) => [LAT0 - y / K, x / (K * C) + LON0] }; })();
+  const WLD = (() => { const A1 = 1.340264, A2 = -0.081106, A3 = 0.000893, A4 = 0.003796, M = Math.sqrt(3) / 2, D = Math.PI / 180;
+    const S = window.WORLD?.S || 200, Ww = window.WORLD?.W || 1082.7, Hw = window.WORLD?.H || 526.9;
+    const proj = (lat, lon) => { const l = lon * D, t = Math.asin(M * Math.sin(lat * D)), t2 = t * t, t6 = t2 * t2 * t2;
+      return [2 * Math.sqrt(3) * l * Math.cos(t) / (3 * (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2))) * S + Ww / 2, -t * (A1 + A2 * t2 + t6 * (A3 + A4 * t2)) * S + Hw / 2]; };
+    const unproj = (X, Y) => { const x = (X - Ww / 2) / S, y = -(Y - Hw / 2) / S; let t = Math.max(-1.3, Math.min(1.3, y / A1));
+      for (let i = 0; i < 20; i++) { const t2 = t * t, t6 = t2 * t2 * t2, f = t * (A1 + A2 * t2 + t6 * (A3 + A4 * t2)) - y, fp = A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2), d = f / fp; t -= d; if (Math.abs(d) < 1e-10) break; }
+      t = Math.max(-Math.asin(M), Math.min(Math.asin(M), t)); const t2 = t * t, t6 = t2 * t2 * t2;
+      const lon = x * 3 * (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2)) / (2 * Math.sqrt(3) * Math.cos(t)) / D;
+      return [Math.asin(Math.max(-1, Math.min(1, Math.sin(t) / M))) / D, Math.max(-180, Math.min(180, lon))]; };
+    return { W: Ww, H: Hw, minW: 5, proj, unproj }; })();
+  let REG = "india", W = IND.W, H = IND.H, proj = IND.proj, unproj = IND.unproj;
+  const zw = (n) => REG === "world" ? n * 0.45 : n;   // zoom widths tuned for India, scaled for the world map
   const haversine = (a, b, c, d) => {
     const r = Math.PI / 180, dl = (c - a) * r, dn = (d - b) * r;
     const h = Math.sin(dl / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dn / 2) ** 2;
@@ -666,7 +721,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     return e;
   };
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"} · ${lon.toFixed(2)}°E`;
+  const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"} · ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? "E" : "W"}`;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   // ---------- storage (best scores + weak spots), always optional ----------
@@ -684,30 +739,107 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   for (const c of window.CATEGORIES) if (window.EXTRA_PLACES?.[c.id]) { c.places = c.places.concat(window.EXTRA_PLACES[c.id]); window.EXTRA_PLACES[c.id] = null; }
   for (const c of window.CATEGORIES) {
     const list = c.places.map(([name, lat, lon, state, fact]) => {
-      const [x, y] = proj(lat, lon);
-      const it = { id: c.id + ":" + name, name, lat, lon, x, y, state, fact, cat: c.id, catTitle: c.title };
+      const [x, y] = IND.proj(lat, lon);
+      const it = { id: c.id + ":" + name, name, lat, lon, x, y, state, fact, cat: c.id, catTitle: c.title, region: "india" };
       ITEMS.push(it); return it;
     });
-    TOPICS.push({ id: c.id, title: c.title, icon: c.icon, items: list });
+    TOPICS.push({ id: c.id, title: c.title, icon: c.icon, items: list, region: "india" });
   }
-  const stateItems = window.STATES.map(([name, capital, fact]) => ({ id: "states:" + name, name, capital, fact, state: name, cat: "states", catTitle: "States & UTs", isState: true }));
+  const stateItems = window.STATES.map(([name, capital, fact]) => ({ id: "states:" + name, name, capital, fact, state: name, cat: "states", catTitle: "States & UTs", isState: true, region: "india" }));
   ITEMS.push(...stateItems);
+  // world places
+  const worldTopics = [];
+  for (const c of window.WORLD_CATEGORIES || []) {
+    const list = c.places.map(([name, lat, lon, where, fact]) => {
+      const [x, y] = WLD.proj(lat, lon);
+      const it = { id: c.id + ":" + name, name, lat, lon, x, y, state: where, fact, cat: c.id, catTitle: c.title, region: "world" };
+      ITEMS.push(it); return it;
+    });
+    worldTopics.push({ id: c.id, title: c.title, icon: c.icon, items: list, region: "world" });
+  }
+  // countries (tap the shape)
+  const COUNTRY_META = Object.fromEntries((window.WORLD?.countries || []).map((c) => [c.n, c]));
+  const countryItems = Object.entries(window.COUNTRY_INFO || {}).filter(([n]) => COUNTRY_META[n]).map(([name, [capital, fact]]) => {
+    const m = COUNTRY_META[name], sub = m.s || m.c;
+    return { id: "countries:" + name, name, capital, fact: fact || `Capital ${capital}; part of ${sub}.`, clue: fact ? null : `Its capital is ${capital}, in ${sub}.`,
+      state: name, cat: "countries", catTitle: "Countries of the World", isState: true, region: "world" };
+  });
+  ITEMS.push(...countryItems);
   const byId = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
-  TOPICS.unshift({ id: "states", title: "States & UTs", icon: "🗺️", items: stateItems });
-  TOPICS.unshift({ id: "mix", title: "Mixed: all topics", icon: "🎯", get items() { return ITEMS.filter((i) => !i.isState); } });
-  TOPICS.push({ id: "weak", title: "My weak spots", icon: "📌", get items() {
-    return Object.entries(stats).filter(([id, v]) => v.m > 0 && byId[id]).sort((a, b) => b[1].m - a[1].m).map(([id]) => byId[id]);
-  } });
+  const polyItems = (region) => region === "world" ? countryItems : stateItems;
+  TOPICS.unshift({ id: "states", title: "States & UTs", icon: "🗺️", items: stateItems, region: "india" });
+  TOPICS.unshift({ id: "mix", title: "Mixed: all India topics", icon: "🎯", region: "india", get items() { return ITEMS.filter((i) => !i.isState && i.region === "india"); } });
+  const weakOf = (region) => Object.entries(stats).filter(([id, v]) => v.m > 0 && byId[id] && byId[id].region === region).sort((a, b) => b[1].m - a[1].m).map(([id]) => byId[id]);
+  TOPICS.push({ id: "weak", title: "My weak spots", icon: "📌", region: "india", get items() { return weakOf("india"); } });
+  TOPICS.push({ id: "wmix", title: "Mixed: all world topics", icon: "🌍", region: "world", get items() { return ITEMS.filter((i) => !i.isState && i.region === "world"); } });
+  TOPICS.push({ id: "countries", title: "Countries of the World", icon: "🗺️", items: countryItems, region: "world" });
+  TOPICS.push(...worldTopics);
+  TOPICS.push({ id: "wweak", title: "My weak spots", icon: "📌", region: "world", get items() { return weakOf("world"); } });
   const topicById = (id) => TOPICS.find((t) => t.id === id);
 
   // ---------- map drawing ----------
   const svg = $("map");
   const gStates = $("states"), gDots = $("dots"), gMarks = $("marks");
   const statePaths = {};
-  if (window.INDIA_OUTLINE) $("outline").setAttribute("d", window.INDIA_OUTLINE);
+  if (window.INDIA_OUTLINE) { $("outline").setAttribute("d", window.INDIA_OUTLINE); $("coastHalo").setAttribute("d", window.INDIA_OUTLINE); }
   for (const [name, d] of Object.entries(window.INDIA_MAP)) {
     const p = svgEl("path", { d, class: "state", "data-state": name }, gStates);
     statePaths[name] = p;
+  }
+  // state name labels (shown when zoomed in, hidden while a question is open)
+  const LABEL_AT = { "Andaman & Nicobar Islands": [11.5, 93.6], "Jammu & Kashmir and Ladakh": [34.2, 76.6], "Dadra & Nagar Haveli and Daman & Diu": [20.3, 73.0], "Puducherry": [11.9, 79.9], "Lakshadweep": [10.4, 72.6], "Goa": [15.35, 74.1], "Delhi": [28.65, 77.15], "Chandigarh": [30.73, 76.78], "West Bengal": [23.2, 87.9], "Gujarat": [22.6, 71.5], "Uttar Pradesh": [27.0, 80.6], "Assam": [26.3, 92.8], "Himachal Pradesh": [31.9, 77.2], "Uttarakhand": [30.1, 79.1] };
+  const SHORT = { "Andaman & Nicobar Islands": "A & N Islands", "Jammu & Kashmir and Ladakh": "J&K and Ladakh", "Dadra & Nagar Haveli and Daman & Diu": "DNH & DD" };
+  const areaLabels = [];
+  for (const name of Object.keys(window.INDIA_MAP)) {
+    const at = LABEL_AT[name]; let x, y;
+    if (at) [x, y] = IND.proj(at[0], at[1]); else { const b = statePaths[name].getBBox(); x = b.x + b.width / 2; y = b.y + b.height / 2; }
+    const small = /Delhi|Chandigarh|Goa|Puducherry|Lakshadweep|DNH|Dadra|Sikkim|Tripura/.test(name);
+    const t = svgEl("text", { x, y, "data-fs": small ? 9 : 10.5 }, $("stateLabels")); t.textContent = SHORT[name] || name;
+    areaLabels.push({ el: t, region: "india", minppu: small ? 4.5 : 1.25 });
+  }
+  // ---- world layer ----
+  if (window.WORLD) {
+    const Wd = window.WORLD;
+    // globe outline (Equal Earth sphere)
+    let sp = ""; for (let lat = -90; lat <= 90; lat += 2) { const [x, y] = WLD.proj(lat, 180); sp += (sp ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1); }
+    for (let lat = 90; lat >= -90; lat -= 2) { const [x, y] = WLD.proj(lat, -180); sp += "L" + x.toFixed(1) + "," + y.toFixed(1); }
+    $("wSphere").setAttribute("d", sp + "Z");
+    // graticule every 30°
+    const gl = (pts) => pts.map(([la, lo], i) => { const [x, y] = WLD.proj(la, lo); return (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1); }).join("");
+    for (let lon = -150; lon <= 180; lon += 30) { const pts = []; for (let la = -90; la <= 90; la += 3) pts.push([la, lon]); svgEl("path", { d: gl(pts), class: "gl" }, $("wGrid")); }
+    for (let la = -60; la <= 60; la += 30) { const pts = []; for (let lo = -180; lo <= 180; lo += 3) pts.push([la, lo]); svgEl("path", { d: gl(pts), class: "gl" }, $("wGrid")); }
+    // tropics and polar circles
+    for (const [la, txt] of [[23.44, "TROPIC OF CANCER"], [-23.44, "TROPIC OF CAPRICORN"], [66.56, "ARCTIC CIRCLE"], [-66.56, "ANTARCTIC CIRCLE"], [0, "EQUATOR"]]) {
+      const pts = []; for (let lo = -180; lo <= 180; lo += 3) pts.push([la, lo]); svgEl("path", { d: gl(pts), class: "gl" }, $("wGuide"));
+      const [x, y] = WLD.proj(la, -178); const t = svgEl("text", { x: x + 6, y: y - 3, "data-fs": 8 }, $("wGuide")); t.textContent = txt;
+    }
+    $("wHalo").setAttribute("d", Wd.countries.filter((c) => c.n !== "Antarctica" || true).map((c) => c.d).join(""));
+    for (const c of Wd.countries) {
+      const isIndia = c.n === "India";
+      const p = svgEl("path", { d: c.d, class: "state country", "data-state": c.n }, $("wCountries"));
+      statePaths[c.n] = p; if (isIndia) $("wIndia").setAttribute("d", c.d);
+      if (c.n !== "Antarctica") {
+        const t = svgEl("text", { x: c.lx, y: c.ly, "data-fs": c.bw > 60 ? 11 : 9.5 }, $("wLabels")); t.textContent = c.n;
+        areaLabels.push({ el: t, region: "world", minppu: Math.max(0.6, Math.min(40, (c.n.length * 6.5) / Math.max(c.bw, 0.5))) });
+      }
+    }
+    const gw = $("wWater");
+    if (Wd.lakes) svgEl("path", { d: Wd.lakes, class: "lake" }, gw);
+    for (const [name, rank, d] of Wd.rivers) {
+      const pth = svgEl("path", { d, class: rank >= 5 ? "river minor" : "river", "stroke-width": rank <= 2 ? 1.3 : rank <= 4 ? 1 : 0.7 }, gw);
+      if (name) { const t = svgEl("title", {}, pth); t.textContent = name; }
+    }
+    for (const [txt, la, lo] of [["PACIFIC OCEAN", 5, -140], ["PACIFIC OCEAN", 15, 160], ["ATLANTIC OCEAN", 25, -45], ["ATLANTIC OCEAN", -20, -15], ["INDIAN OCEAN", -22, 78], ["SOUTHERN OCEAN", -58, 20], ["ARCTIC OCEAN", 80, -30]]) {
+      const [x, y] = WLD.proj(la, lo); const t = svgEl("text", { x, y, class: "ocean-label", "data-fs": 11 }, $("wOcean")); t.textContent = txt;
+    }
+  }
+  function setRegion(r) {
+    if (r === REG && svg.dataset.region === r) return;
+    REG = r; const P = r === "world" ? WLD : IND; W = P.W; H = P.H; proj = P.proj; unproj = P.unproj;
+    svg.dataset.region = r; svg.classList.toggle("world", r === "world");
+    $("layerIndia").style.display = r === "india" ? "" : "none"; $("layerWorld").style.display = r === "world" ? "" : "none";
+    const g = $("seaGrad"); g.setAttribute("cx", W / 2); g.setAttribute("cy", H * 0.48); g.setAttribute("r", Math.max(W, H) * 0.85);
+    cancelAnimationFrame(anim); vb = { x: 0, y: 0, w: W, h: H }; applyView();
   }
   // graticule every 5°
   const gGrid = $("grid");
@@ -748,7 +880,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   for (const [txt, lat, lon] of [["ARABIAN SEA", 15.5, 69.2], ["BAY OF BENGAL", 15.5, 85.6], ["INDIAN OCEAN", 6.4, 75.2]]) {
     const [x, y] = proj(lat, lon); const t = svgEl("text", { x, y, class: "sea-label", "data-fs": 10 }, gSea); t.textContent = txt;
   }
-  $("guideToggle").addEventListener("change", (e) => { for (const id of ["guide", "relief", "seaLabels"]) $(id).style.display = e.target.checked ? "" : "none";
+  $("guideToggle").addEventListener("change", (e) => { for (const id of ["guide", "relief", "seaLabels", "stateLabels", "wGuide", "wLabels", "wOcean"]) $(id).style.display = e.target.checked ? "" : "none";
     document.querySelectorAll(".nb-label").forEach((t) => t.style.display = e.target.checked ? "" : "none"); });
 
   // ---------- pan & zoom ----------
@@ -756,22 +888,25 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   const ppu = () => { const r = svg.getBoundingClientRect(); return Math.min(r.width / vb.w, r.height / vb.h) || 1; };
   const toMap = (cx, cy) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 }; };
   function clampVb() {
-    vb.w = Math.min(Math.max(vb.w, 24), W * 1.4); vb.h = vb.w * H / W;
+    vb.w = Math.min(Math.max(vb.w, (REG === "world" ? WLD : IND).minW), W * 1.4); vb.h = vb.w * H / W;
     vb.x = Math.min(Math.max(vb.x, -vb.w / 2), W - vb.w / 2);
     vb.y = Math.min(Math.max(vb.y, -vb.h / 2), H - vb.h / 2);
   }
   function applyView() {
     clampVb();
     svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-    const u = 1 / ppu(); // map units per screen pixel
+    const pp0 = ppu(), u = 1 / pp0; // map units per screen pixel
     $("relief").classList.toggle("far", ppu() < 0.9);
     $("water").classList.toggle("far", ppu() < 1.6);
+    $("wWater").classList.toggle("far", ppu() < 2.2);
+    const pp = ppu(); for (const l of areaLabels) if (l.region === REG) l.el.classList.toggle("off", pp < l.minppu);
     svg.querySelectorAll("[data-r]").forEach((e) => e.setAttribute("r", e.dataset.r * u));
-    svg.querySelectorAll("[data-fs]").forEach((e) => e.setAttribute("font-size", e.dataset.fs * u * 1.15));
+    svg.querySelectorAll("[data-fs]").forEach((e) => { e.setAttribute("font-size", e.dataset.fs * u * 1.15); e.style.strokeWidth = 3 * u; });
+    $("wOcean").classList.toggle("off", pp0 < 0.55); $("wGuide").classList.toggle("textoff", pp0 < 0.55);
     svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
   }
   function zoomAt(f, cx, cy) {
-    const p = toMap(cx, cy); const nw = Math.min(Math.max(vb.w * f, 24), W * 1.4); const k = nw / vb.w;
+    const p = toMap(cx, cy); const nw = Math.min(Math.max(vb.w * f, (REG === "world" ? WLD : IND).minW), W * 1.4); const k = nw / vb.w;
     vb.x = p.x - (p.x - vb.x) * k; vb.y = p.y - (p.y - vb.y) * k; vb.w = nw; vb.h = nw * H / W; applyView();
   }
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -845,6 +980,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     t.textContent = text; return t;
   }
   function stateCentroid(name) {
+    const m = REG === "world" && COUNTRY_META[name]; if (m) return [m.lx, m.ly, Math.max(m.bw, m.bh * W / H, 3)];
     const p = statePaths[name]; if (!p) return null; const b = p.getBBox();
     return [b.x + b.width / 2, b.y + b.height / 2, Math.max(b.width, b.height * W / H)];
   }
@@ -861,7 +997,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     applyView(); requestAnimationFrame(applyView);
   }
 
-  let mode = "pin", topicId = "mix", rounds = 10, timeLimit = store.get("timer", 30), tough = store.get("tough", false);
+  let mode = "pin", rounds = 10, timeLimit = store.get("timer", 30), tough = store.get("tough", false);
+  let homeRegion = store.get("region", "india"), topicId = homeRegion === "world" ? "wmix" : "mix";
   const pinLike = () => mode === "pin" || mode === "clue";
   const MODE_HELP = {
     pin: "A place is named. Tap where it is on the map. You score 1,000 minus 1 point for every km you are off.",
@@ -878,12 +1015,14 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     $("lvHelp").textContent = tough ? "Tough: lose 2 points per km (500 km off scores 0), no hints, look-alike choices." : "Normal: lose 1 point per km (1,000 km off scores 0). Hints halve the score.";
     document.querySelectorAll("[data-t]").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.t === timeLimit));
     $("startBtn").textContent = mode === "learn" ? "Open revision map" : "Start";
+    document.querySelectorAll("[data-region]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.region === homeRegion));
     const box = $("topics"); box.replaceChildren();
     for (const t of TOPICS) {
+      if (t.region !== homeRegion) continue;
       const n = t.items.length; const b = document.createElement("button");
       b.type = "button"; b.className = "topic"; b.setAttribute("aria-pressed", t.id === topicId);
       const bs = best[mode + ":" + t.id + (tough ? ":tough" : "")];
-      const meta = t.id === "weak" ? (n ? `${n} to fix` : "none yet") : `${n} places${bs ? ` · best ${bs}` : ""}`;
+      const meta = (t.id === "weak" || t.id === "wweak") ? (n ? `${n} to fix` : "none yet") : `${n} places${bs ? ` · best ${bs}` : ""}`;
       b.innerHTML = `<span class="ic" aria-hidden="true">${t.icon}</span><span class="nm">${esc(t.title)}</span><span class="meta">${meta}</span>`;
       if (!n) b.disabled = true;
       b.onclick = () => { topicId = t.id; renderHome(); previewTopic(); };
@@ -893,11 +1032,14 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   function previewTopic() {
     gDots.replaceChildren(); clearMarks(); clearStateClasses();
     const t = topicById(topicId); if (!t) return;
-    const pts = t.items.filter((i) => !i.isState);
+    setRegion(t.region);
+    const pts = t.items.filter((i) => !i.isState && i.region === t.region);
     for (const i of pts) circle(i.x, i.y, 3.2, "dot quiet", gDots);
     applyView();
   }
   document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => { mode = b.dataset.mode; renderHome(); });
+  document.querySelectorAll("[data-region]").forEach((b) => b.onclick = () => {
+    homeRegion = b.dataset.region; store.set("region", homeRegion); topicId = homeRegion === "world" ? "wmix" : "mix"; renderHome(); previewTopic(); resetView(); });
   document.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => {
     rounds = +b.dataset.n; document.querySelectorAll("[data-n]").forEach((c) => c.setAttribute("aria-pressed", c === b));
   });
@@ -905,7 +1047,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { timeLimit = +b.dataset.t; store.set("timer", timeLimit); renderHome(); });
   $("startBtn").onclick = () => mode === "learn" ? openLearn(topicId) : startGame(topicById(topicId).items);
   $("homeBtn").onclick = goHome;
-  function goHome() { if (game?.cur) game.cur.animating = false; svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
+  function goHome() { document.body.classList.remove("asking"); if (game?.cur) game.cur.animating = false; svg.classList.remove("crosshair", "statepick"); show("home"); renderHome(); previewTopic(); resetView(); }
 
   // ---------- sound (synthesised, no files) ----------
   const sfx = (() => {
@@ -955,7 +1097,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   const GENERIC = new Set("national park tiger reserve wildlife sanctuary bird lake wetland dam falls port island islands pass peak valley temple temples caves cave fort river project plant steel coalfield field mines mine hills hill marine gulf channel strait bridge barrage hydro reservoir sagar estuary nuclear power solar wind farm renewable energy oil".split(" "));
   const reEsc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   function clueHtml(it) {
-    const text = it.isState ? (window.STATE_CLUES?.[it.name] || it.fact) : it.fact;
+    const text = it.clue || (it.isState ? (window.STATE_CLUES?.[it.name] || it.fact) : it.fact);
     const words = it.name.replace(/[()/]/g, " ").split(/[^A-Za-z\u00C0-\u024F'-]+/).filter((w) => w.length >= 4 && !GENERIC.has(w.toLowerCase()));
     let html = esc(text);
     for (const w of words) html = html.replace(new RegExp(`\\b${reEsc(esc(w))}[a-z]*`, "gi"), '<span class="mask" aria-label="hidden word">▢▢▢</span>');
@@ -976,7 +1118,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     const rnd = seededRng("naksha-" + todayKey()); const all = ITEMS.filter((i) => !i.isState).slice();
     for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
     const picked = [], cats = new Set();
-    for (const it of all) { if (picked.length === 5) break; if (!cats.has(it.cat)) { picked.push(it); cats.add(it.cat); } }
+    for (const want of ["india", "world", "india", "world", "india"]) {
+      const it = all.find((i) => i.region === want && !cats.has(i.cat) && !picked.includes(i)) || all.find((i) => !picked.includes(i));
+      picked.push(it); cats.add(it.cat);
+    }
     return picked;
   }
   const emoji = (f) => f >= 0.8 ? "🟩" : f >= 0.5 ? "🟨" : f >= 0.2 ? "🟧" : "🟥";
@@ -1008,7 +1153,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       $("dGrid").textContent = rec.grid; $("dailyBtn").textContent = "See today's result";
       $("dNext").textContent = `Next Daily in ${fmtLeft(msToNext())}`;
     } else {
-      $("dText").textContent = "Five places, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.";
+      $("dText").textContent = "Five places from India and the world, one tap each. The last three are indirect clues and worth more. A perfect day scores 1,000.";
       $("dailyBtn").textContent = "Play today's 5"; $("dNext").textContent = "Same five places for everyone today. New set at midnight IST.";
     }
   }
@@ -1035,7 +1180,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     // logo
     x.fillStyle = "#fff"; rrect(x, 80, 80, 80, 80, 22); x.fill();
     x.save(); x.translate(80, 80); x.scale(2.5, 2.5); x.fillStyle = "#0f5465"; x.fill(new Path2D("M16 26s7-6 7-11.5a7 7 0 1 0-14 0C9 20 16 26 16 26z")); x.beginPath(); x.arc(16, 14.5, 2.8, 0, 7); x.fillStyle = "#f29f3d"; x.fill(); x.restore();
-    x.fillStyle = "#fff"; x.font = disp(800, 58); x.fillText("Naksha", 182, 136); x.font = mono(24); x.globalAlpha = .75; x.fillText("INDIA MAP QUEST", 184, 168); x.globalAlpha = 1;
+    x.fillStyle = "#fff"; x.font = disp(800, 58); x.fillText("Naksha", 182, 136); x.font = mono(24); x.globalAlpha = .75; x.fillText("MAP QUEST · INDIA & WORLD", 184, 168); x.globalAlpha = 1;
     // title + score
     x.font = body(600, 44); x.globalAlpha = .9; x.fillText(title, 80, 330, W - 160); x.globalAlpha = 1;
     x.font = disp(800, 230); const st = score.toLocaleString("en-IN"); x.fillText(st, 72, 580); const sw = x.measureText(st).width;
@@ -1192,6 +1337,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
 
   function ask() {
     const q = game.qs[game.i]; game.cur = { q, hint: false, done: false, pending: null };
+    setRegion(q.region || "india"); document.body.classList.add("asking");
     clearMarks(); clearStateClasses(); updateStats();
     $("feedback").hidden = true; $("hintRow").hidden = false; $("options").hidden = true; $("sheet").hidden = false;
     $("pEyebrow").textContent = game.daily ? `Daily #${dailyNo()} · ${game.i + 1} of 5 · worth ${maxPts()}` : `${q.catTitle} · ${game.i + 1} of ${game.qs.length}`;
@@ -1217,10 +1363,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       $("pSub").textContent = "Pick one answer · keys 1–4";
       if (q.isState) {
         statePaths[q.name]?.classList.add("target");
-        const c = stateCentroid(q.name); if (c) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 4, 140)));
+        const c = stateCentroid(q.name); if (c) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 4, zw(140))));
       } else {
         circle(q.x, q.y, 7, "m-quiz pulse"); circle(q.x, q.y, 6, "m-quiz");
-        flyToPlay(q.x, q.y, 280);
+        flyToPlay(q.x, q.y, zw(280));
       }
       renderOptions(q);
     }
@@ -1228,16 +1374,16 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (game.daily) { clearInterval(timerId); $("timerWrap").hidden = $("clock").hidden = true; } else startTimer();
   }
   function renderOptions(q) {
-    const same = (q.isState ? stateItems : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
+    const same = (q.isState ? polyItems(q.region) : ITEMS.filter((i) => i.cat === q.cat && i.id !== q.id));
     let opts;
     if (tough) {
       // look-alike choices: nearest places from the same topic (but not on top of the answer)
-      const cand = q.isState ? stateItems.filter((i) => i.id !== q.id && statePaths[i.name]) : same.filter((i) => haversine(q.lat, q.lon, i.lat, i.lon) > 40);
+      const cand = q.isState ? polyItems(q.region).filter((i) => i.id !== q.id && statePaths[i.name]) : same.filter((i) => haversine(q.lat, q.lon, i.lat, i.lon) > 40);
       const dist = (i) => { if (!q.isState) return haversine(q.lat, q.lon, i.lat, i.lon); const a = stateCentroid(q.name), b = stateCentroid(i.name); return a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 1e9; };
       opts = shuffle([q, ...cand.sort((a, b) => dist(a) - dist(b)).slice(0, 3)]);
     } else {
       let pool = same.filter((i) => i.id !== q.id && (q.isState || haversine(q.lat, q.lon, i.lat, i.lon) > 120));
-      if (pool.length < 3) pool = (q.isState ? stateItems : ITEMS.filter((i) => !i.isState)).filter((i) => i.id !== q.id);
+      if (pool.length < 3) pool = (q.isState ? polyItems(q.region) : ITEMS.filter((i) => !i.isState && i.region === q.region)).filter((i) => i.id !== q.id);
       opts = shuffle([q, ...shuffle(pool).slice(0, 3)]);
     }
     const box = $("options"); box.replaceChildren(); box.hidden = false;
@@ -1255,7 +1401,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (q.isState) { $("hintText").textContent = `Capital: ${q.capital}`; return; }
     $("hintText").textContent = `In ${q.state}`;
     const sp = statePaths[STATE_ALIAS[q.state] || q.state];
-    if (sp) { sp.classList.add("hint"); if (pinLike()) { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, 90))); } }
+    if (sp) { sp.classList.add("hint"); if (pinLike()) { const cc = stateCentroid(sp.dataset.state); flyTo(cc[0], cc[1], Math.min(W, Math.max(cc[2] * 1.6, zw(90)))); } }
   };
 
   function onMapTap(x, y, target) {
@@ -1326,7 +1472,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     clearMarks();
     circle(x, y, 6, "m-guess");
     const dx = Math.abs(x - q.x), dy = Math.abs(y - q.y);
-    flyToPlay((x + q.x) / 2, (y + q.y) / 2, Math.min(W * 1.12, Math.max(dx * 2, dy * 2.4 * W / H, 120)));
+    flyToPlay((x + q.x) / 2, (y + q.y) / 2, Math.min(W * 1.12, Math.max(dx * 2, dy * 2.4 * W / H, zw(120))));
     const verdict = d < 25 ? ["Bullseye!", "good"] : d < 75 ? ["Excellent", "good"] : d < 150 ? ["Close", "mid"] : d < 350 ? ["Right region", "mid"] : ["Far off", "bad"];
     record(q, d < (hard ? 75 : 150), pts, d);
     game.cur.animating = true;
@@ -1379,7 +1525,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     statePaths[q.name].classList.add("target");
     if (!ok && picked && statePaths[picked]) statePaths[picked].classList.add("wrong");
     const c = stateCentroid(q.name); label(c[0], c[1], q.name);
-    if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, 160)));
+    if (!ok) flyToPlay(c[0], c[1], Math.min(W * 1.12, Math.max(c[2] * 3, zw(160))));
     record(q, ok, pts, err); sfx.land(sc.f);
     const tapped = !picked ? "You picked the sea." : picked === "Jammu & Kashmir and Ladakh" ? "You picked Jammu & Kashmir / Ladakh." : `You picked ${esc(picked)}.`;
     feedback(ok ? ["Correct!", "good"] : ["Not quite", "bad"], pts, ok ? "Right state: full points." : `${tapped} The shaded one is ${esc(q.name)}. ${scoreLine(err, sc, "Your tap was off by")}`);
@@ -1411,12 +1557,13 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (mode === "spot") return answerSpot(null, null);
     const q = c.q;
     clearMarks(); clearStateClasses();
-    if (q.isState) { statePaths[q.name].classList.add("target"); const cc = stateCentroid(q.name); label(cc[0], cc[1], q.name); flyToPlay(cc[0], cc[1], Math.min(W * 1.12, Math.max(cc[2] * 3, 160))); }
-    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyToPlay(q.x, q.y, 220); }
+    if (q.isState) { statePaths[q.name].classList.add("target"); const cc = stateCentroid(q.name); label(cc[0], cc[1], q.name); flyToPlay(cc[0], cc[1], Math.min(W * 1.12, Math.max(cc[2] * 3, zw(160)))); }
+    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyToPlay(q.x, q.y, zw(220)); }
     record(q, false, 0, null); sfx.land(0);
     feedback(["Time's up", "bad"], 0, "No pin was placed this round.");
   }
   function record(q, ok, pts, d) {
+    document.body.classList.remove("asking");
     stopTimer();
     game.cur.done = true;
     game.score += pts; game.streak = ok ? game.streak + 1 : 0;
@@ -1500,7 +1647,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       li.querySelector("button").onclick = () => showOnMap(x.q);
       ul.appendChild(li);
     });
-    for (const x of r) if (!x.ok) {
+    const lastReg = r.length ? r[r.length - 1].q.region : REG; setRegion(lastReg || "india");
+    for (const x of r) if (!x.ok && x.q.region === REG) {
       if (x.q.isState) statePaths[x.q.name]?.classList.add("wrong");
       else circle(x.q.x, x.q.y, 5, "m-guess");
     }
@@ -1529,14 +1677,14 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       li.innerHTML = `<span aria-hidden="true">${Array.from(rec.grid)[k] || ""}</span><button type="button">${esc(x.q.name)}</button><span class="d">${x.d != null ? x.d + " km · " : ""}${x.pts}/${DAILY_WEIGHTS[k]}</span>`;
       li.querySelector("button").onclick = () => showOnMap(x.q);
       ul.appendChild(li);
-      if (!x.ok) circle(x.q.x, x.q.y, 5, "m-guess");
+      if (!x.ok && x.q.region === REG && !x.q.isState) circle(x.q.x, x.q.y, 5, "m-guess");
     });
     show("result"); resetView(); applyView();
   }
   function showOnMap(q) {
-    clearMarks(); clearStateClasses();
-    if (q.isState) { statePaths[q.name]?.classList.add("target"); const c = stateCentroid(q.name); label(c[0], c[1], q.name); flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 3, 140))); }
-    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyTo(q.x, q.y, 200); }
+    setRegion(q.region || "india"); clearMarks(); clearStateClasses();
+    if (q.isState) { statePaths[q.name]?.classList.add("target"); const c = stateCentroid(q.name); label(c[0], c[1], q.name); flyTo(c[0], c[1], Math.min(W, Math.max(c[2] * 3, zw(140)))); }
+    else { circle(q.x, q.y, 12, "m-ring pulse"); circle(q.x, q.y, 7, "m-answer"); label(q.x, q.y, q.name); flyTo(q.x, q.y, zw(200)); }
     applyView();
   }
   $("againBtn").onclick = () => { const g = game; startGame(g.custom ? g.pool : topicById(topicId).items, g.topicLabel); if (g.custom) game.custom = true; };
@@ -1546,9 +1694,9 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   // ---------- revise / learn ----------
   let learnId = "mix";
   function openLearn(id) {
-    learnId = id === "weak" && !topicById("weak").items.length ? "mix" : id;
+    learnId = (id === "weak" || id === "wweak") && !topicById(id).items.length ? (id === "wweak" ? "wmix" : "mix") : id;
     const sel = $("learnTopic"); sel.replaceChildren();
-    for (const t of TOPICS) { if (!t.items.length) continue; const o = document.createElement("option"); o.value = t.id; o.textContent = `${t.title} (${t.items.length})`; sel.appendChild(o); }
+    for (const t of TOPICS) { if (!t.items.length) continue; const o = document.createElement("option"); o.value = t.id; o.textContent = `${t.region === "world" ? "World" : "India"} · ${t.title} (${t.items.length})`; sel.appendChild(o); }
     sel.value = learnId; $("learnSearch").value = ""; $("learnCard").hidden = true;
     show("learn"); renderLearn(); resetView();
   }
@@ -1556,10 +1704,11 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   $("learnSearch").oninput = renderLearn;
   function renderLearn() {
     const t = topicById(learnId); const qstr = $("learnSearch").value.trim().toLowerCase();
+    setRegion(t.region);
     const items = t.items.filter((i) => !qstr || (i.name + " " + i.state + " " + i.fact).toLowerCase().includes(qstr))
       .slice().sort((a, b) => a.name.localeCompare(b.name));
     gDots.replaceChildren(); clearMarks(); clearStateClasses();
-    svg.classList.toggle("statepick", learnId === "states");
+    svg.classList.toggle("statepick", learnId === "states" || learnId === "countries");
     for (const i of items) if (!i.isState) { const c = circle(i.x, i.y, 4, "dot", gDots); c.dataset.id = i.id; }
     const ul = $("plist"); ul.replaceChildren();
     for (const i of items) {
@@ -1581,7 +1730,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   function learnTap(target) {
     const id = target?.dataset?.id; if (id && byId[id]) return learnPick(byId[id]);
     const st = target?.closest?.("[data-state]")?.dataset.state;
-    if (st) { const it = byId["states:" + st]; if (it) learnPick(it);
+    if (st) { const it = byId[(REG === "world" ? "countries:" : "states:") + st]; if (it) learnPick(it);
+      else if (REG === "world") { const m = COUNTRY_META[st]; $("learnCard").hidden = false; $("lWhere").textContent = m ? (m.s || m.c) : ""; $("lTitle").textContent = st; $("lFact").textContent = "Territory shown for reference; not part of the countries quiz."; }
       else { $("learnCard").hidden = false; $("lWhere").textContent = "Union Territories"; $("lTitle").textContent = "Jammu & Kashmir and Ladakh";
         $("lFact").textContent = "Two UTs since 31 October 2019 (J&K Reorganisation Act). This map shows them together, including PoK, Gilgit-Baltistan and Aksai Chin as per India's official map."; } }
   }

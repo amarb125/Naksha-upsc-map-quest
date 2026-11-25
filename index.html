@@ -327,13 +327,29 @@ body.asking .area-labels { display: none; }
 .regions button[aria-pressed="true"] { background: var(--panel); color: var(--brand); box-shadow: var(--shadow); }
 
 /* ---- 3D globe ---- */
-:root { --atmo: #7fc4dc; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --atmo: #2f7f9b; } }
-:root[data-theme="dark"] { --atmo: #2f7f9b; }
+:root { --atmo: #7fc4dc; --ocean: #9fd3e8; --ocean-deep: #4a90b4; --pborder: #ffffff; --coast: #4f879f;
+  --c0: #f2dcad; --c1: #d5e8b4; --c2: #f5c9bd; --c3: #e3d3ef; --c4: #fbe8a0; --c5: #c6e6d4; --cIndia: #f8c27e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --atmo: #2f7f9b; --ocean: #1e5266; --ocean-deep: #0a2531; --pborder: #22343b; --coast: #7fb6cc;
+  --c0: #5b4f39; --c1: #445438; --c2: #5c4540; --c3: #4c435a; --c4: #5d5533; --c5: #395649; --cIndia: #74532c; } }
+:root[data-theme="dark"] { --atmo: #2f7f9b; --ocean: #1e5266; --ocean-deep: #0a2531; --pborder: #22343b; --coast: #7fb6cc;
+  --c0: #5b4f39; --c1: #445438; --c2: #5c4540; --c3: #4c435a; --c4: #5d5533; --c5: #395649; --cIndia: #74532c; }
+.state.colored { fill: var(--c); stroke: var(--pborder); stroke-width: 0.9; }
+.state.colored.target { fill: var(--target); }
+.state.colored.wrong { fill: color-mix(in srgb, var(--bad) 45%, var(--c)); }
+.state.colored.picked { fill: color-mix(in srgb, var(--pin) 55%, var(--c)); }
+.statepick .state.colored:hover { fill: color-mix(in srgb, var(--brand) 18%, var(--c)); }
+.g-coast { fill: none; stroke: var(--coast); stroke-width: 0.9; stroke-linejoin: round; pointer-events: none; }
+.g-lake { stroke: var(--coast); stroke-width: 0.5; }
+#map.globe #gHalo { display: none; }
+#map.globe .india-outline { stroke-width: 1.3; }
+#map.globe[data-region="world"] .india-outline { stroke: var(--coast); stroke-width: 1; }
+#gLabels text, #gStLabels text { font-weight: 700; letter-spacing: 0.01em; }
+#gLabels text.l1 { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.g-ocean-label { fill: color-mix(in srgb, var(--ocean-deep) 70%, var(--ink)); font-family: var(--f-body); font-style: italic; font-weight: 500; letter-spacing: 0.32em; text-anchor: middle; pointer-events: none; opacity: .75; }
 .g-ocean { fill: url(#oceanGrad); }
 .g-atmo { fill: none; stroke: var(--atmo); stroke-width: 18; opacity: .45; filter: url(#glowBlur); pointer-events: none; }
-.g-grat { fill: none; stroke: var(--sea-line); stroke-width: 0.6; opacity: .7; pointer-events: none; }
-.g-guide { fill: none; stroke: var(--guide); stroke-width: 0.9; stroke-dasharray: 4 4; opacity: .6; pointer-events: none; }
+.g-grat { fill: none; stroke: #ffffff; stroke-width: 0.6; opacity: .35; pointer-events: none; }
+.g-guide { fill: none; stroke: #ffffff; stroke-width: 0.9; stroke-dasharray: 5 5; opacity: .55; pointer-events: none; }
 .g-shade { fill: url(#shadeGrad); pointer-events: none; }
 .g-river { fill: none; stroke: var(--river); stroke-width: 1.1; stroke-linejoin: round; stroke-linecap: round; opacity: .85; pointer-events: none; }
 .g-river.minor { stroke-width: 0.7; opacity: .6; }
@@ -504,7 +520,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       </g>
       <g id="layerGlobe" style="display: none">
         <defs>
-          <radialGradient id="oceanGrad" cx="40%" cy="35%" r="70%"><stop offset="0" style="stop-color: var(--sea)"></stop><stop offset="1" style="stop-color: var(--sea-deep)"></stop></radialGradient>
+          <radialGradient id="oceanGrad" cx="40%" cy="35%" r="72%"><stop offset="0" style="stop-color: var(--ocean)"></stop><stop offset="1" style="stop-color: var(--ocean-deep)"></stop></radialGradient>
           <radialGradient id="shadeGrad" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity="0.16"></stop><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop><stop offset="1" stop-color="#05212b" stop-opacity="0.38"></stop></radialGradient>
           <filter id="glowBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"></feGaussianBlur></filter>
         </defs>
@@ -514,8 +530,9 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         <path id="gHalo" class="coast-halo"></path>
         <g id="gCountries"></g>
         <g id="gStates"></g>
-        <path id="gLakes" class="lake"></path>
-        <path id="gInLakes" class="lake"></path>
+        <path id="gCoast" class="g-coast"></path>
+        <path id="gLakes" class="lake g-lake"></path>
+        <path id="gInLakes" class="lake g-lake"></path>
         <path id="gWRivers" class="g-river"></path>
         <path id="gInRivers" class="g-river"></path>
         <path id="gInMinor" class="g-river minor"></path>
@@ -523,6 +540,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         <path id="gIndia" class="india-outline"></path>
         <path id="gGuide" class="g-guide"></path>
         <path id="gShade" class="g-shade"></path>
+        <g id="gOceanLbl"></g>
         <g id="gRelief"></g>
         <g id="gLabels" class="area-labels"></g>
         <g id="gStLabels" class="area-labels"></g>
@@ -906,16 +924,42 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       GL.meridian = { type: "LineString", coordinates: d3.range(4, 38.1, 1).map((la) => [82.5, la]) };
       GL.proj = d3.geoOrthographic().clipAngle(90).precision(0.4); GL.path = d3.geoPath(GL.proj);
       for (const n of Object.keys(GL.byName)) GL.els[n] = svgEl("path", { class: "state country", "data-state": n }, $("gCountries"));
+      GL.coast = topojson.mesh(D.hi, first(D.hi), (a, b) => a === b); GL.coastLo = topojson.mesh(D.lo, first(D.lo), (a, b) => a === b);
       for (const n of Object.keys(GL.st)) GL.stEls[n] = svgEl("path", { class: "state", "data-state": n }, $("gStates"));
       for (const c of window.WORLD?.countries || []) { if (c.n === "Antarctica") continue; const [la, lo] = WLD.unproj(c.lx, c.ly);
         const t = svgEl("text", {}, $("gLabels")); t.textContent = c.n; GL.labels.push({ el: t, ll: [lo, la], deg: c.bw / WLD.W * 360, len: c.n.length, big: c.bw > 60, name: c.n }); }
       for (const [name, b] of Object.entries(stateBox)) { const [la, lo] = IND.unproj(b.lx, b.ly); const t = svgEl("text", {}, $("gStLabels")); t.textContent = SHORT[name] || name;
-        GL.inLabels.push({ el: t, ll: [lo, la], minK: b.small ? 16 : 5.2, fs: b.small ? 10 : 11.5 }); }
-      for (const [txt, la, lo] of IN_RELIEF) { const t = svgEl("text", { class: "relief-label" }, $("gRelief")); t.textContent = txt; GL.inLabels.push({ el: t, ll: [lo, la], minK: 4.8, fs: 10, always: true }); }
+        GL.inLabels.push({ el: t, ll: [lo, la], minK: b.small ? 9 : 2.6, fs: b.small ? 10 : 11.5 }); }
+      for (const [txt, la, lo] of IN_RELIEF) { const t = svgEl("text", { class: "relief-label" }, $("gRelief")); t.textContent = txt; GL.inLabels.push({ el: t, ll: [lo, la], minK: 3.6, fs: 10, always: true }); }
       for (const [txt, la, lo] of IN_SEAS) { const t = svgEl("text", { class: "sea-label" }, $("gRelief")); t.textContent = txt; GL.inLabels.push({ el: t, ll: [lo, la], minK: 2.6, fs: 11, always: true }); }
+      // political colours: neighbours never share a colour (greedy colouring on the topology)
+      const colour = (topo, obj, special) => {
+        const geoms = obj.geometries, nb = topojson.neighbors(geoms), adj = {};
+        geoms.forEach((g, i) => { const n = g.properties.n; adj[n] ||= new Set(); for (const j of nb[i]) { const m = geoms[j].properties.n; if (m !== n) adj[n].add(m); } });
+        const out = {}, order = Object.keys(adj).sort((a, b) => adj[b].size - adj[a].size);
+        for (const n of order) { if (special?.[n]) { out[n] = special[n]; continue; } const used = new Set([...adj[n]].map((m) => out[m])); let c = 0; while (used.has("var(--c" + c + ")") && c < 5) c++; out[n] = "var(--c" + c + ")"; }
+        return out;
+      };
+      GL.colors = colour(D.hi, first(D.hi), { India: "var(--cIndia)" });
+      GL.stColors = colour(D.stHi, first(D.stHi));
+      const paint = (el, c) => { if (!el || !c) return; el.style.setProperty("--c", c); el.classList.add("colored"); };
+      for (const n in GL.els) paint(GL.els[n], GL.colors[n]);
+      for (const n in GL.stEls) paint(GL.stEls[n], GL.stColors[n]);
+      for (const n in flatPath) paint(flatPath[n], GL.colors[n] || GL.stColors[n]);
+      // label priority: bigger countries first; ocean names
+      GL.labels.sort((a, b) => b.deg - a.deg);
+      for (const l of GL.labels) { l.fs = l.deg > 30 ? 12 : l.deg > 12 ? 11 : 10; if (l.deg > 30) l.el.classList.add("l1"); }
+      GL.oceans = [["PACIFIC OCEAN", 0, -150], ["PACIFIC OCEAN", 15, 165], ["ATLANTIC OCEAN", 28, -42], ["ATLANTIC OCEAN", -22, -15], ["INDIAN OCEAN", -22, 78], ["SOUTHERN OCEAN", -60, 40], ["ARCTIC OCEAN", 83, 0]]
+        .map(([t, la, lo]) => { const el = svgEl("text", { class: "g-ocean-label" }, $("gOceanLbl")); el.textContent = t; return { el, ll: [lo, la], fs: 13, len: t.length }; });
       GL.ready = true;
     })().catch(() => { GL.loading = null; });
     return GL.loading;
+  }
+  function globeDetail() {
+    if (GL.full || GL.fullLoading) return;
+    GL.fullLoading = loadScript("globe-detail.js").then(() => { const T = window.GLOBE_DETAIL, o = Object.values(T.objects)[0], fc = topojson.feature(T, o), m = {};
+      for (const f of fc.features) (m[f.properties.n] ||= []).push(f); for (const k in m) m[k] = { type: "FeatureCollection", features: m[k] };
+      GL.full = m; GL.fullCoast = topojson.mesh(T, o, (a, b) => a === b); globeKick(); }).catch(() => { GL.fullLoading = null; });
   }
   const globeVisible = (ll) => d3.geoDistance(ll, [-GL.rot[0], -GL.rot[1]]) < Math.PI / 2 - 0.015;
   function globeSize() { const r = svg.getBoundingClientRect(); GL.cw = r.width || 800; GL.ch = r.height || 600; GL.R = Math.min(GL.cw, GL.ch) * 0.43; }
@@ -953,8 +997,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     const P = GL.path, sphere = P({ type: "Sphere" }), d = (g) => (g && P(g)) || "";
     for (const id of ["gOcean", "gAtmo", "gShade"]) $(id).setAttribute("d", sphere);
     $("gGrat").setAttribute("d", d(GL.grat)); $("gGuide").setAttribute("d", d(GL.guide));
-    $("gHalo").setAttribute("d", d(hi ? GL.land : GL.landLo));
-    for (const n in GL.els) GL.els[n].setAttribute("d", d(hi || !GL.byNameLo[n] ? GL.byName[n] : GL.byNameLo[n]));
+    const useFull = hi && GL.k >= 3.2 && GL.full; if (hi && GL.k >= 3.2) globeDetail();
+    const src = (n) => useFull && GL.full[n] ? GL.full[n] : (hi || !GL.byNameLo[n] ? GL.byName[n] : GL.byNameLo[n]);
+    for (const n in GL.els) GL.els[n].setAttribute("d", d(src(n)));
+    $("gCoast").setAttribute("d", d(useFull ? GL.fullCoast : hi ? GL.coast : GL.coastLo));
     $("gIndia").setAttribute("d", d(hi ? GL.byName.India : (GL.byNameLo.India || GL.byName.India)));
     $("gLakes").setAttribute("d", hi ? d(GL.lakes) : "");
     $("gStates").style.display = india ? "" : "none";
@@ -964,17 +1010,18 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     $("gInLakes").setAttribute("d", india && hi ? d(GL.inLakes) : "");
     $("gWRivers").setAttribute("d", !india && hi ? d(GL.wRivers) : "");
     $("gMeridian").setAttribute("d", india ? d(GL.meridian) : "");
-    const pxPerDeg = GL.R * GL.k * Math.PI / 180;
-    for (const l of GL.labels) {
-      const show = !(india && l.name === "India") && l.deg * pxPerDeg > l.len * 6.5 && globeVisible(l.ll) && l.el.textContent !== answerLabel;
-      l.el.classList.toggle("off", !show); if (!show) continue;
-      const [x, y] = GL.proj(l.ll); l.el.setAttribute("x", x); l.el.setAttribute("y", y); l.el.setAttribute("font-size", l.big ? 12.5 : 11); l.el.style.strokeWidth = 3;
-    }
-    for (const l of GL.inLabels) {
-      const show = india && GL.k >= l.minK && globeVisible(l.ll) && l.el.textContent !== answerLabel;
-      l.el.style.display = show ? "" : "none"; if (!show) continue;
-      const [x, y] = GL.proj(l.ll); l.el.setAttribute("x", x); l.el.setAttribute("y", y); l.el.setAttribute("font-size", l.fs); l.el.style.strokeWidth = 3;
-    }
+    // labels: place in priority order and skip any that would overlap one already placed
+    const pxPerDeg = GL.R * GL.k * Math.PI / 180, placed = [];
+    const fits = (x, y, w, h) => { const b = [x - w / 2 - 3, y - h / 2 - 2, x + w / 2 + 3, y + h / 2 + 2];
+      if (b[0] < 4 || b[2] > GL.cw - 4 || b[1] < 4 || b[3] > GL.ch - 4) return false;
+      for (const o of placed) if (b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]) return false; placed.push(b); return true; };
+    const put = (l, ok, fs, wFactor) => { if (!ok) { l.el.style.display = "none"; return; } const [x, y] = GL.proj(l.ll);
+      if (!fits(x, y, l.len * fs * (wFactor || 0.6), fs * 1.2)) { l.el.style.display = "none"; return; }
+      l.el.style.display = ""; l.el.setAttribute("x", x); l.el.setAttribute("y", y + fs * 0.35); l.el.setAttribute("font-size", fs); l.el.style.strokeWidth = 3; };
+    for (const o of GL.oceans || []) put(o, !india && GL.k < 2.6 && globeVisible(o.ll), o.fs, 0.95);
+    for (const l of GL.inLabels) put(l, india && GL.k >= l.minK && globeVisible(l.ll) && l.el.textContent !== answerLabel, l.fs, l.always ? 1.1 : 0.68);
+    for (const l of GL.labels) { l.el.classList.remove("off");
+      put(l, !(india && l.name === "India") && l.deg * pxPerDeg > l.len * (l.fs || 11) * 0.62 && globeVisible(l.ll) && l.el.textContent !== answerLabel, l.fs || 11, l.deg > 30 ? 0.78 : 0.6); }
     syncMirror();
   }
   function globeKick() {
@@ -1004,7 +1051,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     const out = $("gMirror"); out.replaceChildren(); if (!GL.on || !GL.ready) return;
     for (const src of [...gDots.children, ...gMarks.children]) {
       const tag = src.tagName.toLowerCase();
-      if (tag === "circle") { const ll = toLL(+src.getAttribute("cx"), +src.getAttribute("cy")); if (!globeVisible(ll)) continue;
+      if (tag === "circle") { if (src.classList.contains("quiet") && GL.k < 2.4) continue;
+        const ll = toLL(+src.getAttribute("cx"), +src.getAttribute("cy")); if (!globeVisible(ll)) continue;
         const [x, y] = GL.proj(ll), c = src.cloneNode(true); c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", src.dataset.r || src.getAttribute("r")); out.appendChild(c); }
       else if (tag === "text") { const ax = src.dataset.ax != null ? +src.dataset.ax : +src.getAttribute("x"), ay = src.dataset.ay != null ? +src.dataset.ay : +src.getAttribute("y");
         const ll = toLL(ax, ay); if (!globeVisible(ll)) continue; const [x, y] = GL.proj(ll), c = src.cloneNode(true);
@@ -1020,6 +1068,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   mo.observe(gMarks, { childList: true, subtree: true, attributes: true }); mo.observe(gDots, { childList: true, subtree: true, attributes: true });
   $("globeBtn").onclick = () => { GL.want = !GL.want; store.set("globe", GL.want); if (GL.want) globeEnable(); else { globeDisable(); flatLayers(); vb = { x: 0, y: 0, w: W, h: H }; applyView(); } };
   addEventListener("resize", () => { if (GL.on) globeKick(); });
+  svg.addEventListener("pointerdown", () => { GL.lastInteract = performance.now(); cancelAnimationFrame(GL.anim); cancelAnimationFrame(GL.inertia); });
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { let last = performance.now(); const idle = (t) => { const dt = t - last; last = t;
+      if (GL.on && REG === "world" && document.body.dataset.view === "home" && !document.hidden && t - (GL.lastInteract || 0) > 4000 && GL.k <= 1.3) { GL.rot[0] += dt * 0.004; globeRender("lo"); clearTimeout(GL.idleT); GL.idleT = setTimeout(() => globeRender("hi"), 250); }
+      requestAnimationFrame(idle); }; requestAnimationFrame(idle); }
   if (GL.want) globeLoad().then(() => { if (GL.want && !GL.on) globeEnable(); });
   window.__nakshaGlobe = GL; // read-only hook for automated tests
 
@@ -1104,7 +1156,15 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     svg.querySelectorAll("[data-dx]").forEach((e) => { e.setAttribute("x", +e.dataset.ax + e.dataset.dx * u); e.setAttribute("y", +e.dataset.ay + e.dataset.dy * u); });
   }
   function zoomAt(f, cx, cy) {
-    if (GL.on) { GL.k = Math.min(90, Math.max(0.85, GL.k / f)); globeKick(); return; }
+    if (GL.on) { GL.lastInteract = performance.now(); cancelAnimationFrame(GL.anim); cancelAnimationFrame(GL.inertia);
+      const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); const q = m ? pt.matrixTransform(m.inverse()) : { x: GL.cw / 2, y: GL.ch / 2 };
+      const before = GL.proj.invert([q.x, q.y]);
+      GL.k = Math.min(90, Math.max(0.85, GL.k / f)); GL.proj.scale(GL.R * GL.k);
+      const after = GL.proj.invert([q.x, q.y]);
+      if (before && after && isFinite(before[0]) && isFinite(after[0]) && globeVisible(before)) {
+        let dl = before[0] - after[0]; if (dl > 180) dl -= 360; if (dl < -180) dl += 360;
+        GL.rot[0] -= dl; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] - (before[1] - after[1]))); }
+      globeKick(); return; }
     const p = toMap(cx, cy); const nw = Math.min(Math.max(vb.w * f, (REG === "world" ? WLD : IND).minW), W * 1.4); const k = nw / vb.w;
     vb.x = p.x - (p.x - vb.x) * k; vb.y = p.y - (p.y - vb.y) * k; vb.w = nw; vb.h = nw * H / W; applyView();
   }
@@ -1160,19 +1220,28 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (pointers.size === 1 && down) {
       if (!moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) return;
       moved = true;
-      if (GL.on) { const sc = 180 / (Math.PI * GL.R * GL.k); GL.rot[0] += (e.clientX - prev.x) * sc; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] - (e.clientY - prev.y) * sc)); globeKick(); return; }
+      if (GL.on) { const sc = 180 / (Math.PI * GL.R * GL.k), now = performance.now(), dt = Math.max(8, now - (GL.lastMove || now - 16));
+        const dl = (e.clientX - prev.x) * sc, dp = -(e.clientY - prev.y) * sc;
+        GL.rot[0] += dl; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] + dp)); GL.vel = [dl / dt * 16, dp / dt * 16]; GL.lastMove = now; GL.lastInteract = now;
+        cancelAnimationFrame(GL.anim); cancelAnimationFrame(GL.inertia); globeKick(); return; }
       const u = 1 / ppu();
       vb.x -= (e.clientX - prev.x) * u; vb.y -= (e.clientY - prev.y) * u; applyView();
     }
   });
   const endPointer = (e) => {
     const wasTap = pointers.size === 1 && down && !moved && e.type === "pointerup";
+    if (GL.on && moved && pointers.size === 1 && !pinch && GL.vel && performance.now() - (GL.lastMove || 0) < 60 && !reduceMotion) {
+      let v = GL.vel.slice(); const spin = () => { v = [v[0] * 0.93, v[1] * 0.93]; if (Math.hypot(v[0], v[1]) < 0.02) { globeKick(); return; }
+        GL.rot[0] += v[0]; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] + v[1])); globeRender("lo"); GL.inertia = requestAnimationFrame(spin); };
+      cancelAnimationFrame(GL.inertia); GL.inertia = requestAnimationFrame(spin); }
+    if (pointers.size === 1) GL.vel = null;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = null;
     if (wasTap) { const m = toMap(e.clientX, e.clientY); onMapTap(m.x, m.y, down.target); }
     if (pointers.size === 0) down = null;
   };
   svg.addEventListener("pointerup", endPointer);
+  svg.addEventListener("dblclick", (e) => { if (GL.on && !(game?.cur && !game.cur.done && !views.play.hidden)) { e.preventDefault(); zoomAt(0.5, e.clientX, e.clientY); } });
   svg.addEventListener("pointercancel", endPointer);
   svg.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { pointers.delete(e.pointerId); down = null; } });
   addEventListener("resize", applyView);
@@ -1625,7 +1694,10 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         const cm = REG === "world" && COUNTRY_META[q.name], sb = stateBox[q.name];
         const b = cm ? { x: cm.lx - cm.bw / 2, y: cm.ly - cm.bh / 2, width: cm.bw, height: cm.bh } : sb ? { x: sb.x, y: sb.y, width: sb.w, height: sb.h } : { x: 0, y: 0, width: 0, height: 0 };
         const tol = REG === "world" ? 2 : 8;
-        const near = (b.width * b.height < (REG === "world" ? 6 : 60)) && x > b.x - tol && x < b.x + b.width + tol && y > b.y - tol && y < b.y + b.height + tol;
+        let near = (b.width * b.height < (REG === "world" ? 6 : 60)) && x > b.x - tol && x < b.x + b.width + tol && y > b.y - tol && y < b.y + b.height + tol;
+        if (!near && GL.on) { // on the globe, accept taps within 24 px of a tiny target's centre
+          const small = cm ? cm.bw < 4 : sb?.small; const c = cm ? [cm.lx, cm.ly] : sb ? [sb.lx, sb.ly] : null;
+          if (small && c) { const a = GL.proj(toLL(c[0], c[1])), t = GL.proj(toLL(x, y)); if (a && t && Math.hypot(a[0] - t[0], a[1] - t[1]) < 24) near = true; } }
         if (near) picked = q.name;
       }
       for (const p of Object.values(statePaths)) p.classList.remove("picked");

@@ -1,5 +1,5 @@
 // Naksha service worker: works offline and shows the daily reminder notification.
-const CACHE = "naksha-v8";
+const CACHE = "naksha-v9";
 const SHELL = ["./", "index.html", "map-data.js", "map-extra.js", "places.js", "world-data.js", "world-places.js", "globe-data.js", "earth-2k.jpg", "vendor/d3-array.min.js", "vendor/d3-geo.min.js", "vendor/topojson-client.min.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -8,15 +8,21 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== "naksha-meta").map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
-// Serve from cache straight away, refresh the cache in the background (stale-while-revalidate).
+// Code and data: network first (so a new version shows on the next load), saved copy when offline.
+// Fonts: saved copy first, refreshed in the background.
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
   if (!sameOrigin && !/fonts\.(googleapis|gstatic)\.com$/.test(url.host)) return;
+  if (sameOrigin) {
+    e.respondWith(fetch(req).then((res) => { if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); } return res; })
+      .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match("index.html"))));
+    return;
+  }
   e.respondWith(caches.open(CACHE).then(async (cache) => {
-    const hit = await cache.match(req, { ignoreSearch: sameOrigin });
+    const hit = await cache.match(req);
     const net = fetch(req).then((res) => { if (res && (res.ok || res.type === "opaque")) cache.put(req, res.clone()); return res; }).catch(() => hit);
     if (hit) { e.waitUntil(net); return hit; }
     return net;

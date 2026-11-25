@@ -12,7 +12,7 @@ Map details: coastline halos, state and country names that appear as you zoom in
 
 ## 3D globe
 
-The World map opens as a **3D globe** (orthographic projection, with ocean shading and an atmosphere glow). Drag to spin it, scroll or pinch to zoom, and tap to answer as usual; answer arcs follow great circles. The 🌐 button switches between the globe and the flat Equal Earth map. The India map stays flat. The globe's libraries (d3-geo, topojson-client, in `vendor/`) and data (`globe-data.js`) load only the first time the World map is opened.
+The whole game is played on a **3D globe** (orthographic projection with ocean shading and an atmosphere glow). The start screen shows the full Earth with India in the middle; starting a game flies in to India (states, detailed rivers and lakes, range and sea labels, the 82°30′E meridian) or anywhere in the world. Switching India ↔ World is a fly-over. Drag to spin, scroll or pinch to zoom, tap to answer; answer arcs follow great circles. The 🌐 button switches to the flat maps if you prefer. The globe's libraries (`vendor/`) and data (`globe-data.js`) load just after the page opens.
 
 ## Daily 5
 
@@ -72,7 +72,7 @@ Then visit http://localhost:8000.
 
 - `places.js` — the question bank. Add a place as `[name, lat, lon, state, fact]`.
 - `world-data.js` — world countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), projected to Equal Earth; India replaced by the DataMeet outline.
-- `globe-data.js` — countries and lakes as TopoJSON (lon/lat) for the 3D globe, at two detail levels (low while spinning, high when still).
+- `globe-data.js` — TopoJSON (lon/lat) for the globe: world countries (two detail levels: low while spinning, high when still), India's states, India's detailed rivers and lakes, world rivers and lakes.
 - `vendor/` — d3-array, d3-geo and topojson-client (ISC licence).
 - `world-places.js` — the world question bank and the capitals/facts for the countries quiz.
 - `map-extra.js` — neighbouring countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), simplified.

@@ -1,5 +1,5 @@
 // Naksha service worker: works offline and shows the daily reminder notification.
-const CACHE = "naksha-v3";
+const CACHE = "naksha-v4";
 const SHELL = ["./", "index.html", "map-data.js", "map-extra.js", "places.js", "world-data.js", "world-places.js", "globe-data.js", "vendor/d3-array.min.js", "vendor/d3-geo.min.js", "vendor/topojson-client.min.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

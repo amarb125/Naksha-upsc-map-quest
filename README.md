@@ -12,7 +12,7 @@ Map details: coastline halos, state and country names that appear as you zoom in
 
 ## 3D globe
 
-The whole game is played on a **3D globe** (orthographic projection with ocean shading and an atmosphere glow). The start screen shows the full Earth with India in the middle; starting a game flies in to India (states, detailed rivers and lakes, range and sea labels, the 82°30′E meridian) or anywhere in the world. Switching India ↔ World is a fly-over. Drag to spin, scroll or pinch to zoom, tap to answer; answer arcs follow great circles. Countries are coloured like a political globe (neighbours never share a colour) with crisp borders, and labels are placed so they never overlap. Spin has momentum, zoom follows your cursor or fingers, double-click zooms in, and tiny countries and UTs accept taps close to them. Zooming in loads full 1:50m borders (`globe-detail.js`). The 🌐 button switches to the flat maps if you prefer. The globe's libraries (`vendor/`) and data (`globe-data.js`) load just after the page opens.
+The whole game is played on a **3D globe** (orthographic projection with ocean shading and an atmosphere glow). The start screen shows the full Earth with India in the middle; starting a game flies in to India (states, detailed rivers and lakes, range and sea labels, the 82°30′E meridian) or anywhere in the world. Switching India ↔ World is a fly-over. Drag to spin, scroll or pinch to zoom, tap to answer; answer arcs follow great circles. The globe shows **NASA Blue Marble satellite imagery** (public domain, `earth-2k.jpg`, with `earth-4k.jpg` loaded when you zoom in) drawn with WebGL, on a dark space background, with thin white borders and white labels: 2-letter country codes when zoomed out, full names when zoomed in. Labels are placed so they never overlap. If WebGL isn't available, the globe falls back to colourful political shading. Spin has momentum, zoom follows your cursor or fingers, double-click zooms in, and tiny countries and UTs accept taps close to them. Zooming in loads full 1:50m borders (`globe-detail.js`). The 🌐 button switches to the flat maps if you prefer. The globe's libraries (`vendor/`) and data (`globe-data.js`) load just after the page opens.
 
 ## Daily 5
 
@@ -73,6 +73,7 @@ Then visit http://localhost:8000.
 - `places.js` — the question bank. Add a place as `[name, lat, lon, state, fact]`.
 - `world-data.js` — world countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), projected to Equal Earth; India replaced by the DataMeet outline.
 - `globe-data.js` — TopoJSON (lon/lat) for the globe: world countries (two detail levels: low while spinning, high when still), India's states, India's detailed rivers and lakes, world rivers and lakes.
+- `earth-2k.jpg`, `earth-4k.jpg` — NASA Blue Marble satellite imagery (public domain; NASA Visible Earth).
 - `vendor/` — d3-array, d3-geo and topojson-client (ISC licence).
 - `world-places.js` — the world question bank and the capitals/facts for the countries quiz.
 - `map-extra.js` — neighbouring countries, rivers and lakes from [Natural Earth](https://www.naturalearthdata.com/) (public domain), simplified.

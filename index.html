@@ -360,6 +360,30 @@ body.asking .area-labels { display: none; }
 #globeBtn { font-size: 17px; }
 #globeBtn[aria-pressed="true"] { background: var(--brand); color: #fff; }
 
+/* ---- satellite globe ---- */
+#earthGL { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.mapwrap.sat #earthGL { display: block; }
+.mapwrap.sat { background: radial-gradient(circle at 50% 42%, #142431 0%, #0a121a 45%, #05080c 100%); }
+#map { position: relative; }
+#map.sat .seabg, #map.sat .g-ocean, #map.sat .g-grat, #map.sat .g-shade, #map.sat .g-coast, #map.sat .g-lake, #map.sat .g-river, #map.sat #gHalo { display: none; }
+#map.sat .g-atmo { stroke: #6fb4ff; opacity: .55; }
+#map.sat .state.colored { fill: rgba(255, 255, 255, 0); stroke: rgba(255, 255, 255, .62); stroke-width: 0.75; }
+#map.sat #gStates .state.colored { stroke: rgba(255, 255, 255, .5); stroke-width: 0.7; }
+#map.sat.statepick .state.colored:hover { fill: rgba(255, 255, 255, .14); }
+#map.sat .state.colored.target { fill: rgba(255, 200, 90, .55); stroke: #ffd27a; stroke-width: 1.6; }
+#map.sat .state.colored.wrong { fill: rgba(239, 107, 85, .45); }
+#map.sat .state.colored.picked { fill: rgba(240, 168, 58, .45); stroke: #ffc36a; stroke-width: 1.4; }
+#map.sat .state.colored.hint { stroke: #ffffff; stroke-width: 2; }
+#map.sat .india-outline, #map.sat[data-region="world"] .india-outline { stroke: #ffffff; stroke-width: 1.4; opacity: .95; }
+#map.sat .area-labels text, #map.sat #gRelief text { fill: #ffffff; stroke: rgba(0, 0, 0, .72); font-family: var(--f-display); font-weight: 800; letter-spacing: 0.02em; text-transform: none; }
+#map.sat #gLabels text.code { letter-spacing: 0.04em; }
+#map.sat .g-ocean-label { fill: rgba(255, 255, 255, .5); opacity: 1; }
+#map.sat .g-guide { stroke: rgba(255, 255, 255, .4); }
+#map.sat .m-label { fill: #ffffff; stroke: rgba(0, 0, 0, .78); }
+#map.sat .m-arc, #map.sat .m-line { stroke: #ffffff; }
+#map.sat .dot { fill: #ffffff; stroke: rgba(0, 0, 0, .55); }
+#map.sat .dot.quiet { opacity: .8; }
+
 /* ---- growth features ---- */
 .habit { display: flex; gap: 8px; }
 .habit .btn { flex: 1; padding: 10px 12px; font-size: 13px; }
@@ -491,7 +515,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
 </header>
 
 <main class="app">
-  <section class="mapwrap" aria-label="Map of India">
+  <section class="mapwrap" aria-label="Map">
+    <canvas id="earthGL" aria-hidden="true"></canvas>
     <svg id="map" viewBox="0 0 550 628" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outline map of India with state boundaries">
       <defs><radialGradient id="seaGrad" gradientUnits="userSpaceOnUse" cx="275" cy="300" r="520"><stop offset="0" style="stop-color: var(--sea)"></stop><stop offset="1" style="stop-color: var(--sea-deep)"></stop></radialGradient></defs>
       <rect class="seabg" x="-4000" y="-4000" width="10000" height="10000" fill="url(#seaGrad)"></rect>
@@ -927,7 +952,8 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       GL.coast = topojson.mesh(D.hi, first(D.hi), (a, b) => a === b); GL.coastLo = topojson.mesh(D.lo, first(D.lo), (a, b) => a === b);
       for (const n of Object.keys(GL.st)) GL.stEls[n] = svgEl("path", { class: "state", "data-state": n }, $("gStates"));
       for (const c of window.WORLD?.countries || []) { if (c.n === "Antarctica") continue; const [la, lo] = WLD.unproj(c.lx, c.ly);
-        const t = svgEl("text", {}, $("gLabels")); t.textContent = c.n; GL.labels.push({ el: t, ll: [lo, la], deg: c.bw / WLD.W * 360, len: c.n.length, big: c.bw > 60, name: c.n }); }
+        const t = svgEl("text", {}, $("gLabels")); t.textContent = c.n; const code = c.a2 && c.a2 !== "-99" ? c.a2 : null;
+        GL.labels.push({ el: t, ll: [lo, la], deg: c.bw / WLD.W * 360, len: c.n.length, big: c.bw > 60, name: c.n, code }); }
       for (const [name, b] of Object.entries(stateBox)) { const [la, lo] = IND.unproj(b.lx, b.ly); const t = svgEl("text", {}, $("gStLabels")); t.textContent = SHORT[name] || name;
         GL.inLabels.push({ el: t, ll: [lo, la], minK: b.small ? 9 : 2.6, fs: b.small ? 10 : 11.5 }); }
       for (const [txt, la, lo] of IN_RELIEF) { const t = svgEl("text", { class: "relief-label" }, $("gRelief")); t.textContent = txt; GL.inLabels.push({ el: t, ll: [lo, la], minK: 3.6, fs: 10, always: true }); }
@@ -955,6 +981,73 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     })().catch(() => { GL.loading = null; });
     return GL.loading;
   }
+  // ---- satellite imagery (WebGL), same orthographic maths as d3 so vector layers line up ----
+  const SAT = { ok: false, gl: null, prog: null, tex: null, big: false, loadingBig: false, deriv: false };
+  function satInit() {
+    const c = $("earthGL"); let gl = null;
+    try { gl = c.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: false, preserveDrawingBuffer: false }); } catch { gl = null; }
+    if (!gl) return false;
+    SAT.deriv = !!gl.getExtension("OES_standard_derivatives");
+    const vs = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
+    const fs = (SAT.deriv ? "#extension GL_OES_standard_derivatives : enable\n" : "") + `precision highp float;
+      uniform vec2 uSize; uniform vec2 uCenter; uniform float uScale; uniform vec2 uRot; uniform float uDpr; uniform sampler2D uTex;
+      void main() {
+        vec2 f = gl_FragCoord.xy / uDpr;
+        float x = (f.x - uCenter.x) / uScale, y = (f.y - (uSize.y - uCenter.y)) / uScale;
+        float r2 = x * x + y * y; if (r2 > 1.0) discard;
+        float z = sqrt(1.0 - r2);
+        float lam = atan(x, z), phi = asin(clamp(y, -1.0, 1.0));
+        float cp = cos(phi); float X = cos(lam) * cp, Y = sin(lam) * cp, Z = sin(phi);
+        float cd = cos(uRot.y), sd = sin(uRot.y);
+        float lon = atan(Y, X * cd + Z * sd) - uRot.x, lat = asin(clamp(Z * cd - X * sd, -1.0, 1.0));
+        float u = (lon + 3.14159265) / 6.28318531, v = 0.5 - lat / 3.14159265;
+        float u1 = fract(u);
+        ${SAT.deriv ? "float u2 = fract(u + 0.5) - 0.5; float uu = fwidth(u1) <= fwidth(u2) + 0.0001 ? u1 : u2;" : "float uu = u1;"}
+        vec3 col = texture2D(uTex, vec2(uu, v)).rgb;
+        vec3 L = normalize(vec3(-0.35, 0.45, 0.82));
+        float diff = max(dot(vec3(x, y, z), L), 0.0);
+        col *= mix(0.62, 1.12, diff);
+        col = mix(col, vec3(0.45, 0.68, 0.95), pow(1.0 - z, 3.0) * 0.45);
+        gl_FragColor = vec4(col, 1.0);
+      }`;
+    const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    try {
+      const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return false;
+      gl.useProgram(pr); const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      SAT.gl = gl; SAT.prog = pr; SAT.u = Object.fromEntries(["uSize", "uCenter", "uScale", "uRot", "uDpr", "uTex"].map((n) => [n, gl.getUniformLocation(pr, n)]));
+      return true;
+    } catch { return false; }
+  }
+  function satTexture(src) {
+    return new Promise((res, rej) => { const img = new Image(); img.onload = () => {
+      const gl = SAT.gl, t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, SAT.deriv ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      if (SAT.tex) gl.deleteTexture(SAT.tex); SAT.tex = t; res(); }; img.onerror = rej; img.src = src; });
+  }
+  async function satStart() {
+    if (SAT.ok || SAT.starting) return; SAT.starting = true;
+    if (!satInit()) return;
+    try { await satTexture("earth-2k.jpg"); } catch { return; }
+    SAT.ok = true; svg.classList.add("sat"); document.querySelector(".mapwrap").classList.add("sat"); globeKick();
+  }
+  function satRender() {
+    if (!SAT.ok) return;
+    const c = $("earthGL"), gl = SAT.gl, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.round(GL.cw * dpr), h = Math.round(GL.ch * dpr); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform2f(SAT.u.uSize, GL.cw, GL.ch); gl.uniform2f(SAT.u.uCenter, GL.cw / 2, GL.ch / 2); gl.uniform1f(SAT.u.uScale, GL.R * GL.k);
+    gl.uniform2f(SAT.u.uRot, GL.rot[0] * Math.PI / 180, GL.rot[1] * Math.PI / 180); gl.uniform1f(SAT.u.uDpr, dpr); gl.uniform1i(SAT.u.uTex, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (GL.k > 2.2 && !SAT.big && !SAT.loadingBig && gl.getParameter(gl.MAX_TEXTURE_SIZE) >= 4096) {
+      SAT.loadingBig = true; satTexture("earth-4k.jpg").then(() => { SAT.big = true; satRender(); }).catch(() => {}); }
+  }
   function globeDetail() {
     if (GL.full || GL.fullLoading) return;
     GL.fullLoading = loadScript("globe-detail.js").then(() => { const T = window.GLOBE_DETAIL, o = Object.values(T.objects)[0], fc = topojson.feature(T, o), m = {};
@@ -981,19 +1074,21 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     $("layerWorld").style.display = "none"; $("layerIndia").style.display = "none"; $("layerGlobe").style.display = ""; gMarks.style.display = "none"; gDots.style.display = "none";
     svg.classList.add("globe"); $("globeBtn").setAttribute("aria-pressed", "true"); $("globeBtn").setAttribute("aria-label", "Switch to flat map");
     const h = globeHomeView(); GL.rot = h.rot; GL.k = h.k;
-    applyView(); globeRender("hi");
+    applyView(); globeRender("hi"); satStart();
+    if (SAT.ok) { svg.classList.add("sat"); document.querySelector(".mapwrap").classList.add("sat"); }
   }
   function globeDisable() {
     $("globeBtn").setAttribute("aria-pressed", "false"); $("globeBtn").setAttribute("aria-label", "Switch to 3D globe");
     if (!GL.on) return; GL.on = false; cancelAnimationFrame(GL.anim);
     for (const n in flatPath) statePaths[n] = flatPath[n];
     $("layerGlobe").style.display = "none"; gMarks.style.display = ""; gDots.style.display = "";
-    $("gMirror").replaceChildren(); svg.classList.remove("globe");
+    $("gMirror").replaceChildren(); svg.classList.remove("globe", "sat"); document.querySelector(".mapwrap").classList.remove("sat");
   }
   function globeRender(quality) {
     if (!GL.on || !GL.ready) return;
     const hi = quality === "hi", india = REG === "india"; globeSize();
     GL.proj.rotate(GL.rot).scale(GL.R * GL.k).translate([GL.cw / 2, GL.ch / 2]);
+    satRender();
     const P = GL.path, sphere = P({ type: "Sphere" }), d = (g) => (g && P(g)) || "";
     for (const id of ["gOcean", "gAtmo", "gShade"]) $(id).setAttribute("d", sphere);
     $("gGrat").setAttribute("d", d(GL.grat)); $("gGuide").setAttribute("d", d(GL.guide));
@@ -1019,9 +1114,14 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       if (!fits(x, y, l.len * fs * (wFactor || 0.6), fs * 1.2)) { l.el.style.display = "none"; return; }
       l.el.style.display = ""; l.el.setAttribute("x", x); l.el.setAttribute("y", y + fs * 0.35); l.el.setAttribute("font-size", fs); l.el.style.strokeWidth = 3; };
     for (const o of GL.oceans || []) put(o, !india && GL.k < 2.6 && globeVisible(o.ll), o.fs, 0.95);
-    for (const l of GL.inLabels) put(l, india && GL.k >= l.minK && globeVisible(l.ll) && l.el.textContent !== answerLabel, l.fs, l.always ? 1.1 : 0.68);
+    for (const l of GL.inLabels) put(l, india && GL.k >= l.minK && globeVisible(l.ll) && l.el.textContent !== answerLabel, l.fs, l.always ? 1.15 : (SAT.ok ? 0.74 : 0.68));
+    const codes = SAT.ok && GL.k < 2.6;
     for (const l of GL.labels) { l.el.classList.remove("off");
-      put(l, !(india && l.name === "India") && l.deg * pxPerDeg > l.len * (l.fs || 11) * 0.62 && globeVisible(l.ll) && l.el.textContent !== answerLabel, l.fs || 11, l.deg > 30 ? 0.78 : 0.6); }
+      const useCode = codes && l.code, txt = useCode ? l.code : l.name;
+      if (l.el.textContent !== txt) { l.el.textContent = txt; l.el.classList.toggle("code", !!useCode); l.el.classList.toggle("l1", !useCode && l.deg > 30); }
+      const fs = useCode ? (l.deg > 30 ? 13 : 11.5) : (l.fs || 11), len = txt.length;
+      const big = useCode ? l.deg * pxPerDeg > 9 : l.deg * pxPerDeg > len * fs * 0.62;
+      put({ el: l.el, ll: l.ll, len }, !(india && l.name === "India") && big && globeVisible(l.ll) && l.name !== answerLabel, fs, useCode ? 0.75 : l.deg > 30 ? 0.78 : 0.6); }
     syncMirror();
   }
   function globeKick() {
@@ -1230,7 +1330,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
   });
   const endPointer = (e) => {
     const wasTap = pointers.size === 1 && down && !moved && e.type === "pointerup";
-    if (GL.on && moved && pointers.size === 1 && !pinch && GL.vel && performance.now() - (GL.lastMove || 0) < 60 && !reduceMotion) {
+    if (GL.on && moved && pointers.size === 1 && !pinch && GL.vel && performance.now() - (GL.lastMove || 0) < 140 && !reduceMotion) {
       let v = GL.vel.slice(); const spin = () => { v = [v[0] * 0.93, v[1] * 0.93]; if (Math.hypot(v[0], v[1]) < 0.02) { globeKick(); return; }
         GL.rot[0] += v[0]; GL.rot[1] = Math.max(-88, Math.min(88, GL.rot[1] + v[1])); globeRender("lo"); GL.inertia = requestAnimationFrame(spin); };
       cancelAnimationFrame(GL.inertia); GL.inertia = requestAnimationFrame(spin); }

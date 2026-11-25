@@ -384,6 +384,12 @@ body.asking .area-labels { display: none; }
 #map.sat .dot { fill: #ffffff; stroke: rgba(0, 0, 0, .55); }
 #map.sat .dot.quiet { opacity: .8; }
 
+#map.sat.close:not(.statepick) .state.colored:not(.target):not(.wrong):not(.picked):not(.hint),
+#map.sat.close:not(.statepick) #gStates .state.colored:not(.target):not(.wrong):not(.picked):not(.hint) { stroke: transparent; }
+#map.sat.close:not(.statepick) .india-outline { opacity: 0; }
+.img-credit { position: absolute; left: 50%; transform: translateX(-50%); bottom: 10px; font-size: 10px; color: rgba(255,255,255,.8); background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 999px; pointer-events: none; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+body.playing .img-credit { bottom: auto; top: 8px; }
+
 /* ---- growth features ---- */
 .habit { display: flex; gap: 8px; }
 .habit .btn { flex: 1; padding: 10px 12px; font-size: 13px; }
@@ -582,6 +588,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       <button type="button" id="globeBtn" aria-label="Switch to flat map" title="Globe / flat map">🌐</button>
     </div>
     <div class="coords" id="coords">23.44°N · 82.50°E</div>
+    <div class="img-credit" id="imgCredit" hidden>Imagery: Sentinel-2 cloudless by EOX (CC BY 4.0) · Copernicus Sentinel data 2016</div>
     <label class="guidetoggle"><input type="checkbox" id="guideToggle" checked> Labels &amp; guide lines</label>
 
     <!-- PLAY: overlays on the full-screen map -->
@@ -991,6 +998,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     const vs = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
     const fs = (SAT.deriv ? "#extension GL_OES_standard_derivatives : enable\n" : "") + `precision highp float;
       uniform vec2 uSize; uniform vec2 uCenter; uniform float uScale; uniform vec2 uRot; uniform float uDpr; uniform sampler2D uTex;
+      uniform sampler2D uDet; uniform vec4 uDetB; uniform float uDetOn; uniform float uFlat;
       void main() {
         vec2 f = gl_FragCoord.xy / uDpr;
         float x = (f.x - uCenter.x) / uScale, y = (f.y - (uSize.y - uCenter.y)) / uScale;
@@ -1006,8 +1014,15 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
         vec3 col = texture2D(uTex, vec2(uu, v)).rgb;
         vec3 L = normalize(vec3(-0.35, 0.45, 0.82));
         float diff = max(dot(vec3(x, y, z), L), 0.0);
-        col *= mix(0.62, 1.12, diff);
-        col = mix(col, vec3(0.45, 0.68, 0.95), pow(1.0 - z, 3.0) * 0.45);
+        if (uDetOn > 0.5) {
+          float mx = fract((lon + 3.14159265) / 6.28318531);
+          float la = clamp(lat, -1.48442, 1.48442);
+          float my = (1.0 - log(tan(0.78539816 + la / 2.0)) / 3.14159265) / 2.0;
+          vec2 dv = vec2((mx - uDetB.x) / (uDetB.z - uDetB.x), (my - uDetB.y) / (uDetB.w - uDetB.y));
+          if (dv.x >= 0.0 && dv.x <= 1.0 && dv.y >= 0.0 && dv.y <= 1.0) { vec4 dc = texture2D(uDet, dv); col = mix(col, dc.rgb, dc.a); }
+        }
+        col *= mix(mix(0.62, 1.12, diff), 1.0, uFlat);
+        col = mix(col, vec3(0.45, 0.68, 0.95), pow(1.0 - z, 3.0) * 0.45 * (1.0 - uFlat));
         gl_FragColor = vec4(col, 1.0);
       }`;
     const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
@@ -1017,13 +1032,13 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
       gl.useProgram(pr); const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      SAT.gl = gl; SAT.prog = pr; SAT.u = Object.fromEntries(["uSize", "uCenter", "uScale", "uRot", "uDpr", "uTex"].map((n) => [n, gl.getUniformLocation(pr, n)]));
+      SAT.gl = gl; SAT.prog = pr; SAT.u = Object.fromEntries(["uSize", "uCenter", "uScale", "uRot", "uDpr", "uTex", "uDet", "uDetB", "uDetOn", "uFlat"].map((n) => [n, gl.getUniformLocation(pr, n)]));
       return true;
     } catch { return false; }
   }
   function satTexture(src) {
     return new Promise((res, rej) => { const img = new Image(); img.onload = () => {
-      const gl = SAT.gl, t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      const gl = SAT.gl; gl.activeTexture(gl.TEXTURE0); const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, SAT.deriv ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
@@ -1044,9 +1059,56 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(SAT.u.uSize, GL.cw, GL.ch); gl.uniform2f(SAT.u.uCenter, GL.cw / 2, GL.ch / 2); gl.uniform1f(SAT.u.uScale, GL.R * GL.k);
     gl.uniform2f(SAT.u.uRot, GL.rot[0] * Math.PI / 180, GL.rot[1] * Math.PI / 180); gl.uniform1f(SAT.u.uDpr, dpr); gl.uniform1i(SAT.u.uTex, 0);
+    gl.uniform1f(SAT.u.uFlat, Math.max(0, Math.min(1, (GL.k - 2.5) / 5)));
+    const detOn = TILES.tex && TILES.bounds && GL.k >= TILES.minK;
+    gl.uniform1f(SAT.u.uDetOn, detOn ? 1 : 0);
+    if (detOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, TILES.tex); gl.uniform1i(SAT.u.uDet, 1);
+      const b = TILES.bounds; gl.uniform4f(SAT.u.uDetB, b[0], b[1], b[2], b[3]); gl.activeTexture(gl.TEXTURE0); }
+    $("imgCredit").hidden = !(detOn && TILES.loaded > 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     if (GL.k > 2.2 && !SAT.big && !SAT.loadingBig && gl.getParameter(gl.MAX_TEXTURE_SIZE) >= 4096) {
       SAT.loadingBig = true; satTexture("earth-4k.jpg").then(() => { SAT.big = true; satRender(); }).catch(() => {}); }
+  }
+  // ---- sharp close-ups: Sentinel-2 cloudless satellite tiles (EOX, CC BY 4.0), fetched for the current view only ----
+  const TILES = { url: window.NAKSHA_TILES || "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg",
+    minK: 2.6, maxZ: 14, cache: new Map(), tex: null, bounds: null, key: "", loaded: 0, canvas: null, gen: 0, failures: 0, upT: 0 };
+  function tilesUpdate() {
+    if (!SAT.ok || !GL.on || GL.k < TILES.minK || TILES.failures > 12) return;
+    // visible lon/lat box from a grid of screen points
+    const pts = []; for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) { const ll = GL.proj.invert([GL.cw * i / 8, GL.ch * j / 8]); if (ll && isFinite(ll[0]) && globeVisible(ll)) pts.push(ll); }
+    if (pts.length < 6) return;
+    const c0 = -GL.rot[0]; const lons = pts.map((p) => { let d = p[0] - c0; while (d > 180) d -= 360; while (d < -180) d += 360; return c0 + d; });
+    let lo0 = Math.min(...lons), lo1 = Math.max(...lons), la0 = Math.max(-84, Math.min(...pts.map((p) => p[1]))), la1 = Math.min(84, Math.max(...pts.map((p) => p[1])));
+    if (lo1 - lo0 > 160) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), pxPerDeg = GL.R * GL.k * Math.PI / 180 * dpr;
+    let z = Math.max(3, Math.min(TILES.maxZ, Math.ceil(Math.log2(pxPerDeg * 360 / 256))));
+    const mx = (lon) => (lon + 180) / 360, my = (lat) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(Math.PI / 4 + r / 2)) / Math.PI) / 2; };
+    let x0, x1, y0, y1, n;
+    for (;; z--) { n = 2 ** z; x0 = Math.floor(mx(lo0) * n); x1 = Math.floor(mx(lo1) * n); y0 = Math.max(0, Math.floor(my(la1) * n)); y1 = Math.min(n - 1, Math.floor(my(la0) * n));
+      if ((x1 - x0 + 1) * (y1 - y0 + 1) <= 64 || z <= 3) break; }
+    const key = `${z}/${x0}/${x1}/${y0}/${y1}`; if (key === TILES.key) return;
+    TILES.key = key; const gen = ++TILES.gen, nx = x1 - x0 + 1, ny = y1 - y0 + 1;
+    const cv = document.createElement("canvas"); cv.width = nx * 256; cv.height = ny * 256; const cx = cv.getContext("2d");
+    TILES.pending = { cv, bounds: [x0 / n, y0 / n, (x1 + 1) / n, (y1 + 1) / n] }; TILES.loaded = 0;
+    for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
+      const wx = ((tx % n) + n) % n, k = `${z}/${wx}/${ty}`;
+      const draw = (img) => { TILES.failures = 0; if (gen !== TILES.gen) return; cx.drawImage(img, (tx - x0) * 256, (ty - y0) * 256, 256, 256); TILES.loaded++; tilesUpload(); };
+      const hit = TILES.cache.get(k); if (hit?.complete && hit.naturalWidth) { draw(hit); continue; }
+      const img = hit || new Image(); if (!hit) { img.crossOrigin = "anonymous"; img.src = TILES.url.replace("{z}", z).replace("{x}", wx).replace("{y}", ty); TILES.cache.set(k, img);
+        if (TILES.cache.size > 400) TILES.cache.delete(TILES.cache.keys().next().value); }
+      img.addEventListener("load", () => draw(img), { once: true }); img.addEventListener("error", () => { TILES.failures++; TILES.cache.delete(k); }, { once: true });
+    }
+  }
+  function tilesUpload() {
+    clearTimeout(TILES.upT); TILES.upT = setTimeout(() => {
+      const P = TILES.pending, gl = SAT.gl; if (!P) return;
+      try { gl.activeTexture(gl.TEXTURE1); if (!TILES.tex) TILES.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, TILES.tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, P.cv);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.activeTexture(gl.TEXTURE0); TILES.bounds = P.bounds; satRender();
+      } catch { TILES.failures = 99; } // tainted canvas (no CORS) etc.: keep the base imagery
+    }, 60);
   }
   function globeDetail() {
     if (GL.full || GL.fullLoading) return;
@@ -1093,6 +1155,9 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     for (const id of ["gOcean", "gAtmo", "gShade"]) $(id).setAttribute("d", sphere);
     $("gGrat").setAttribute("d", d(GL.grat)); $("gGuide").setAttribute("d", d(GL.guide));
     const useFull = hi && GL.k >= 3.2 && GL.full; if (hi && GL.k >= 3.2) globeDetail();
+    if (hi) tilesUpdate();
+    // close-ups look like a photo: borders fade away unless the question is about a state/country shape
+    svg.classList.toggle("close", SAT.ok && GL.k >= 3.2);
     const src = (n) => useFull && GL.full[n] ? GL.full[n] : (hi || !GL.byNameLo[n] ? GL.byName[n] : GL.byNameLo[n]);
     for (const n in GL.els) GL.els[n].setAttribute("d", d(src(n)));
     $("gCoast").setAttribute("d", d(useFull ? GL.fullCoast : hi ? GL.coast : GL.coastLo));
@@ -1259,7 +1324,7 @@ h2 { font-size: 11px; letter-spacing: 0.14em; }
     if (GL.on) { GL.lastInteract = performance.now(); cancelAnimationFrame(GL.anim); cancelAnimationFrame(GL.inertia);
       const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; const m = svg.getScreenCTM(); const q = m ? pt.matrixTransform(m.inverse()) : { x: GL.cw / 2, y: GL.ch / 2 };
       const before = GL.proj.invert([q.x, q.y]);
-      GL.k = Math.min(90, Math.max(0.85, GL.k / f)); GL.proj.scale(GL.R * GL.k);
+      GL.k = Math.min(SAT.ok ? 300 : 90, Math.max(0.85, GL.k / f)); GL.proj.scale(GL.R * GL.k);
       const after = GL.proj.invert([q.x, q.y]);
       if (before && after && isFinite(before[0]) && isFinite(after[0]) && globeVisible(before)) {
         let dl = before[0] - after[0]; if (dl > 180) dl -= 360; if (dl < -180) dl += 360;
